@@ -242,6 +242,7 @@ class _Sidebar extends GetView<AppController> {
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
+      barrierLabel: 'Appearance',
       barrierColor: Colors.black.withValues(alpha: 0.3),
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (context, animation, secondaryAnimation) {
