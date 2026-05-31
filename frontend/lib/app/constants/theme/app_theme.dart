@@ -7,12 +7,24 @@ class AppTheme {
       useMaterial3: true,
       brightness: .dark,
       scaffoldBackgroundColor: AppColors.darkBg,
-      dividerColor: AppColors.textDark.withValues(alpha: 0.10),
+      dividerColor: AppColors.darkDivider,
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
+        fillColor: AppColors.darkSurfaceAlt.withValues(alpha: 0.6),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: AppColors.blue,
+            width: 2,
+          ),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -20,6 +32,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
+          elevation: 0,
         ),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
@@ -27,9 +40,10 @@ class AppTheme {
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
+          side: WidgetStatePropertyAll(BorderSide.none),
         ),
       ),
-      colorScheme: const .dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColors.green,
         secondary: AppColors.blue,
         surface: AppColors.darkSurface,
@@ -43,12 +57,13 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: AppColors.darkSurface,
-        elevation: 0,
+        elevation: 1.5, // Subtle shadow instead of border
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: AppColors.textDark.withValues(alpha: 0.06)),
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide.none, // ✅ No border
         ),
+        shadowColor: Colors.black.withValues(alpha: 0.15),
       ),
     );
   }
@@ -58,12 +73,24 @@ class AppTheme {
       useMaterial3: true,
       brightness: .light,
       scaffoldBackgroundColor: AppColors.lightBg,
-      dividerColor: AppColors.textLight.withValues(alpha: 0.10),
+      dividerColor: AppColors.lightDivider,
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
+        fillColor: AppColors.lightHoverBg,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: AppColors.blueLight,
+            width: 2,
+          ),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -71,6 +98,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
+          elevation: 0,
         ),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
@@ -78,11 +106,12 @@ class AppTheme {
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
+          side: WidgetStatePropertyAll(BorderSide.none),
         ),
       ),
-      colorScheme: const .light(
-        primary: AppColors.green,
-        secondary: AppColors.blue,
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.greenLight,
+        secondary: AppColors.blueLight,
         surface: AppColors.lightSurface,
         error: AppColors.red,
       ),
@@ -94,12 +123,13 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: AppColors.lightSurface,
-        elevation: 0,
+        elevation: 1.5, // ✅ Subtle shadow instead of border
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(color: AppColors.textLight.withValues(alpha: 0.08)),
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide.none, // ✅ No border
         ),
+        shadowColor: Colors.black.withValues(alpha: 0.04),
       ),
     );
   }

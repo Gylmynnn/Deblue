@@ -11,28 +11,54 @@ class _GradientCache {
   static LinearGradient getMobileGradient(BuildContext context) {
     final key = 'mobile_${Theme.of(context).brightness}';
     return _cache.putIfAbsent(key, () {
-      return LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Theme.of(context).scaffoldBackgroundColor,
-          Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
-        ],
-      );
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      if (isDark) {
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).scaffoldBackgroundColor,
+            AppColors.darkSurface.withValues(alpha: 0.45),
+          ],
+        );
+      } else {
+        // Light mode: Cool gradient with subtle blue tone
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.lightBg,
+            AppColors.lightSurfaceAlt.withValues(alpha: 0.3),
+          ],
+        );
+      }
     });
   }
 
   static LinearGradient getDesktopGradient(BuildContext context) {
     final key = 'desktop_${Theme.of(context).brightness}';
     return _cache.putIfAbsent(key, () {
-      return LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Theme.of(context).scaffoldBackgroundColor,
-          Theme.of(context).colorScheme.surface.withValues(alpha: 0.58),
-        ],
-      );
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      if (isDark) {
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).scaffoldBackgroundColor,
+            AppColors.darkSurface.withValues(alpha: 0.58),
+          ],
+        );
+      } else {
+        // Light mode: Cool gradient with subtle blue tone
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.lightBg,
+            AppColors.lightSurfaceAlt.withValues(alpha: 0.45),
+          ],
+        );
+      }
     });
   }
 }
