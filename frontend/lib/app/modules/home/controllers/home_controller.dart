@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:frontend/app/controllers/app_controller.dart';
 import 'package:frontend/app/data/models/adapter_model.dart';
 import 'package:frontend/app/data/models/device_model.dart';
+import 'package:frontend/app/data/services/backend_process_service.dart';
 import 'package:frontend/app/data/services/bluetooth_event_service.dart';
 import 'package:frontend/app/data/services/bluetooth_service.dart';
 import 'package:get/get.dart';
 
 class HomeController extends GetxController {
+  final BackendProcessService _backendProcess =
+      Get.find<BackendProcessService>();
   final AppController _appController = Get.find<AppController>();
   final BluetoothService _service = Get.find<BluetoothService>();
   final BluetoothEventService _eventService = Get.find<BluetoothEventService>();
@@ -19,12 +22,12 @@ class HomeController extends GetxController {
   final Rxn<AdapterModel> adapter = Rxn<AdapterModel>();
   final RxList<DeviceModel> devices = <DeviceModel>[].obs;
   final RxSet<String> loadingDevicePaths = <String>{}.obs;
+  final Rxn<DeviceModel> selectedDevice = Rxn<DeviceModel>();
 
   @override
   void onInit() {
     super.onInit();
-    refreshData();
-    _connectEventStream();
+    _init();
   }
 
   @override
@@ -32,6 +35,12 @@ class HomeController extends GetxController {
     _eventSubscription?.cancel();
     _refreshDebounce?.cancel();
     super.onClose();
+  }
+
+  Future<void> _init() async {
+    await _backendProcess.ensureStarted();
+    await refreshData();
+    _connectEventStream();
   }
 
   List<DeviceModel> get filteredDevices {
@@ -51,6 +60,14 @@ class HomeController extends GetxController {
 
       return matchesSearch && matchesFilter;
     }).toList();
+  }
+
+  void selectDevice(DeviceModel device) {
+    selectedDevice.value = device;
+  }
+
+  void clearSelectedDevice() {
+    selectedDevice.value = null;
   }
 
   Future<void> _connectEventStream() async {
@@ -186,7 +203,15 @@ class HomeController extends GetxController {
     try {
       loading.value = true;
       adapter.value = await _service.getAdapter();
-      devices.assignAll(await _service.getDevices());
+      final latestDevices = await _service.getDevices();
+      devices.assignAll(latestDevices);
+      final selected = selectedDevice.value;
+      if (selected != null) {
+        final updatedSelected = latestDevices.firstWhereOrNull(
+          (device) => device.path == selected.path,
+        );
+        selectedDevice.value = updatedSelected;
+      }
     } catch (error) {
       Get.snackbar(
         'Backend Error',
@@ -203,7 +228,23 @@ class HomeController extends GetxController {
     if (current == null) {
       return;
     }
-    await _service.setPower(!current.powered);
-    await refreshData();
+    try {
+      loading.value = true;
+      await _service.setPower(!current.powered);
+      await refreshData();
+      Get.snackbar(
+        'Bluetooth Updated',
+        !current.powered ? 'Bluetooth enabled' : 'Bluetooth disabled',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (error) {
+      Get.snackbar(
+        'Bluetooth Error',
+        error.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      loading.value = false;
+    }
   }
 }

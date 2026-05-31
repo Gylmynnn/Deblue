@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:frontend/app/constants/theme/app_color.dart';
 import 'package:frontend/app/controllers/app_controller.dart';
 import 'package:frontend/app/data/models/device_model.dart';
+import 'package:frontend/app/data/services/backend_process_service.dart';
 import 'package:frontend/app/data/services/bluetooth_event_service.dart';
 import 'package:frontend/app/modules/home/controllers/home_controller.dart';
+import 'package:frontend/app/routes/app_pages.dart';
 import 'package:frontend/app/widgets/app_shell.dart';
 import 'package:frontend/app/widgets/device_detail_dialog.dart';
+import 'package:frontend/app/widgets/device_detail_panel.dart';
 import 'package:get/get.dart';
 
 class HomeView extends GetView<AppController> {
@@ -27,7 +30,7 @@ class HomeView extends GetView<AppController> {
           ),
           IconButton(
             onPressed: () {
-              Get.toNamed('/settings');
+              Get.toNamed(Routes.SETTINGS);
             },
             icon: const Icon(Icons.settings_rounded),
           ),
@@ -73,10 +76,38 @@ class HomeView extends GetView<AppController> {
                     ),
                     const SizedBox(height: 12),
                     Expanded(
-                      child: _PlaceholderDevices(
-                        layoutMode: layoutMode,
-                        isCompact: isCompact,
-                      ),
+                      child: Obx(() {
+                        final selectedDevice =
+                            Get.find<HomeController>().selectedDevice.value;
+
+                        final showDetailPanel =
+                            selectedDevice != null &&
+                            constraints.maxWidth >= 1100;
+
+                        if (!showDetailPanel) {
+                          return _PlaceholderDevices(
+                            layoutMode: layoutMode,
+                            isCompact: isCompact,
+                          );
+                        }
+
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _PlaceholderDevices(
+                                layoutMode: layoutMode,
+                                isCompact: isCompact,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            SizedBox(
+                              width: 360,
+                              child: DeviceDetailPanel(device: selectedDevice),
+                            ),
+                          ],
+                        );
+                      }),
                     ),
                   ],
                 ),
@@ -89,7 +120,20 @@ class HomeView extends GetView<AppController> {
   }
 }
 
-void showDeviceDetail(DeviceModel device) {
+bool isSelectedDevice(DeviceModel device) {
+  final selected = Get.find<HomeController>().selectedDevice.value;
+  return selected?.path == device.path;
+}
+
+void showDeviceDetail(BuildContext context, DeviceModel device) {
+  final isDesktop = MediaQuery.sizeOf(context).width >= 1100;
+  final homeC = Get.find<HomeController>();
+
+  if (isDesktop) {
+    homeC.selectDevice(device);
+    return;
+  }
+
   Get.dialog(DeviceDetailDialog(device: device));
 }
 
@@ -271,6 +315,7 @@ class _HeaderCard extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     final eventService = Get.find<BluetoothEventService>();
+    final backendProcess = Get.find<BackendProcessService>();
 
     return Obx(() {
       final adapter = controller.adapter.value;
@@ -278,7 +323,8 @@ class _HeaderCard extends GetView<HomeController> {
       final discovering = adapter?.discovering ?? false;
       final scanning = controller.scanning.value;
       final realtime = eventService.connected.value;
-
+      final backendRunning = backendProcess.running.value;
+      final backendStarting = backendProcess.starting.value;
       return Card(
         child: Padding(
           padding: EdgeInsets.all(isCompact ? 16 : 22),
@@ -301,9 +347,26 @@ class _HeaderCard extends GetView<HomeController> {
                           active: powered,
                         ),
                         _StatusChip(
+                          label: backendRunning
+                              ? 'Backend'
+                              : backendStarting
+                              ? 'Starting'
+                              : 'Backend offline',
+                          active: backendRunning,
+                        ),
+                        _StatusChip(
                           label: realtime ? 'Realtime' : 'Offline',
                           active: realtime,
                         ),
+                        if (!backendRunning && !backendStarting)
+                          FilledButton.icon(
+                            onPressed: () async {
+                              await backendProcess.ensureStarted();
+                              await controller.refreshData();
+                            },
+                            icon: const Icon(Icons.play_arrow_rounded),
+                            label: const Text('Start Backend'),
+                          ),
                         FilledButton.icon(
                           onPressed: scanning ? null : controller.scan,
                           icon: scanning
@@ -559,14 +622,24 @@ class _DeviceGridCard extends GetView<HomeController> {
     final bool connected = device.connected;
 
     return Obx(() {
+      final bool selected = isSelectedDevice(device);
       final bool isLoading = controller.isDeviceLoading(device.path);
       return Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(
+            color: selected
+                ? AppColors.green.withValues(alpha: 0.65)
+                : Theme.of(context).dividerColor.withValues(alpha: 0.3),
+            width: selected ? 1.4 : 1,
+          ),
+        ),
         child: InkWell(
           borderRadius: .circular(18),
           onTap: isLoading
               ? null
               : () {
-                  showDeviceDetail(device);
+                  showDeviceDetail(context, device);
                 },
           child: Padding(
             padding: const .all(18),
@@ -640,7 +713,7 @@ class _DeviceTile extends GetView<HomeController> {
     return Card(
       child: ListTile(
         onTap: () {
-          showDeviceDetail(device);
+          showDeviceDetail(context, device);
         },
         leading: Icon(
           connected ? Icons.bluetooth_connected_rounded : Icons.devices_rounded,
@@ -698,7 +771,7 @@ class _DeviceCompactTile extends GetView<HomeController> {
       child: ListTile(
         dense: true,
         onTap: () {
-          showDeviceDetail(device);
+          showDeviceDetail(context, device);
         },
         leading: Icon(
           connected

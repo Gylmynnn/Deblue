@@ -90,13 +90,22 @@ class BluetoothService implements BluetoothRepo {
     if (response.isOk) {
       return;
     }
-
     final body = response.body;
-
-    if (body is Map && body['error'] != null) {
-      throw Exception(body['error']);
+    if (body is Map) {
+      final error = body['error'];
+      final message = body['message'];
+      if (error != null && error.toString().trim().isNotEmpty) {
+        throw Exception(error.toString());
+      }
+      if (message != null && message.toString().trim().isNotEmpty) {
+        throw Exception(message.toString());
+      }
     }
 
+    final statusText = response.statusText;
+    if (statusText != null && statusText.trim().isNotEmpty) {
+      throw Exception(statusText);
+    }
     throw Exception('Request failed with status ${response.statusCode}');
   }
 }
