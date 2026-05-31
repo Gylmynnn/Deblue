@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:frontend/app/constants/theme/app_color.dart';
 import 'package:frontend/app/controllers/app_controller.dart';
 import 'package:frontend/app/modules/home/controllers/home_controller.dart';
+import 'package:frontend/app/modules/settings/controllers/settings_controller.dart';
 import 'package:get/get.dart';
 
-class SettingsView extends GetView<AppController> {
+class SettingsView extends GetView<SettingsController> {
   const SettingsView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final backendUrlController = TextEditingController(
-      text: controller.backendUrl.value,
-    );
+    final appController = Get.find<AppController>();
+    
+    // Set initial URL value
+    controller.setInitialUrl(appController.backendUrl.value);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -32,15 +34,15 @@ class SettingsView extends GetView<AppController> {
                       children: [
                         Obx(() {
                           return _ThemeModeSelector(
-                            value: controller.themeMode.value,
-                            onChanged: controller.setThemeMode,
+                            value: appController.themeMode.value,
+                            onChanged: appController.setThemeMode,
                           );
                         }),
                         const SizedBox(height: 14),
                         Obx(() {
                           return _LayoutModeSelector(
-                            value: controller.layoutMode.value,
-                            onChanged: controller.setLayoutMode,
+                            value: appController.layoutMode.value,
+                            onChanged: appController.setLayoutMode,
                           );
                         }),
                       ],
@@ -50,14 +52,14 @@ class SettingsView extends GetView<AppController> {
                       title: 'Backend',
                       children: [
                         TextField(
-                          controller: backendUrlController,
+                          controller: controller.backendUrlController,
                           decoration: const InputDecoration(
                             labelText: 'Backend URL',
                             hintText: 'http://127.0.0.1:8787',
                             border: OutlineInputBorder(),
                           ),
                           onSubmitted: (value) async {
-                            await controller.setBackendUrl(value);
+                            await appController.setBackendUrl(value);
 
                             Get.snackbar(
                               'Saved',
@@ -72,8 +74,8 @@ class SettingsView extends GetView<AppController> {
                             Expanded(
                               child: FilledButton.icon(
                                 onPressed: () async {
-                                  await controller.setBackendUrl(
-                                    backendUrlController.text,
+                                  await appController.setBackendUrl(
+                                    controller.backendUrlController.text,
                                   );
 
                                   Get.snackbar(

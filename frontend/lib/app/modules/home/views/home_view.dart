@@ -451,8 +451,12 @@ class _PlaceholderDevices extends GetView<HomeController> {
         return ListView.separated(
           itemCount: devices.length,
           separatorBuilder: (_, _) => const SizedBox(height: 8),
+          addAutomaticKeepAlives: false,
           itemBuilder: (context, index) {
-            return _DeviceCompactTile(device: devices[index]);
+            return _DeviceCompactTile(
+              key: ValueKey(devices[index].path),
+              device: devices[index],
+            );
           },
         );
       }
@@ -461,8 +465,12 @@ class _PlaceholderDevices extends GetView<HomeController> {
         return ListView.separated(
           itemCount: devices.length,
           separatorBuilder: (_, _) => const SizedBox(height: 10),
+          addAutomaticKeepAlives: false,
           itemBuilder: (context, index) {
-            return _DeviceTile(device: devices[index]);
+            return _DeviceTile(
+              key: ValueKey(devices[index].path),
+              device: devices[index],
+            );
           },
         );
       }
@@ -475,8 +483,12 @@ class _PlaceholderDevices extends GetView<HomeController> {
           mainAxisSpacing: 12,
           mainAxisExtent: 170,
         ),
+        addAutomaticKeepAlives: false,
         itemBuilder: (context, index) {
-          return _DeviceGridCard(device: devices[index]);
+          return _DeviceGridCard(
+            key: ValueKey(devices[index].path),
+            device: devices[index],
+          );
         },
       );
     });
@@ -613,7 +625,10 @@ class _EmptyDevicesState extends StatelessWidget {
 }
 
 class _DeviceGridCard extends GetView<HomeController> {
-  const _DeviceGridCard({required this.device});
+  const _DeviceGridCard({
+    super.key,
+    required this.device,
+  });
 
   final DeviceModel device;
 
@@ -705,7 +720,10 @@ class _DeviceGridCard extends GetView<HomeController> {
 }
 
 class _DeviceTile extends GetView<HomeController> {
-  const _DeviceTile({required this.device});
+  const _DeviceTile({
+    super.key,
+    required this.device,
+  });
   final DeviceModel device;
   @override
   Widget build(BuildContext context) {
@@ -762,7 +780,10 @@ class _DeviceTile extends GetView<HomeController> {
 }
 
 class _DeviceCompactTile extends GetView<HomeController> {
-  const _DeviceCompactTile({required this.device});
+  const _DeviceCompactTile({
+    super.key,
+    required this.device,
+  });
   final DeviceModel device;
   @override
   Widget build(BuildContext context) {

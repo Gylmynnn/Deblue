@@ -11,10 +11,17 @@ class BackendProcessService extends GetxService {
   final AppController _appController = Get.find<AppController>();
 
   Process? _process;
+  static HttpClient? _httpClient;
 
   final RxBool starting = false.obs;
   final RxBool running = false.obs;
   final RxString errorMessage = ''.obs;
+
+  /// Singleton HttpClient instance untuk menghindari memory leak
+  static HttpClient get _getHttpClient {
+    _httpClient ??= HttpClient();
+    return _httpClient!;
+  }
 
   Future<void> ensureStarted() async {
     if (starting.value) {
@@ -86,7 +93,8 @@ class BackendProcessService extends GetxService {
         _appController.backendUrl.value,
       );
 
-      final client = HttpClient();
+      // Use singleton HttpClient instance
+      final client = _getHttpClient;
 
       final request = await client
           .getUrl(uri)
@@ -98,8 +106,7 @@ class BackendProcessService extends GetxService {
 
       await response.drain();
 
-      client.close();
-
+      // Don't close singleton client, just keep it for reuse
       return response.statusCode >= 200 && response.statusCode < 500;
     } catch (_) {
       return false;
@@ -152,6 +159,10 @@ class BackendProcessService extends GetxService {
 
   @override
   void onClose() {
+    // Close singleton HttpClient when service is closed
+    _httpClient?.close(force: true);
+    _httpClient = null;
+    
     // Sengaja tidak kill backend jika ingin backend tetap hidup.
     // Kalau ingin backend mati saat Flutter ditutup, uncomment:
     // stopOwnedBackend();

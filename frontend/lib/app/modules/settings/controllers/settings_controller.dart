@@ -1,23 +1,26 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class SettingsController extends GetxController {
-  //TODO: Implement SettingsController
+  /// TextEditingController untuk Backend URL
+  late TextEditingController backendUrlController;
 
-  final count = 0.obs;
   @override
   void onInit() {
     super.onInit();
-  }
-
-  @override
-  void onReady() {
-    super.onReady();
+    // Initialize with empty, will be set in view when controller is available
+    backendUrlController = TextEditingController();
   }
 
   @override
   void onClose() {
+    // Dispose TextEditingController untuk menghindari memory leak
+    backendUrlController.dispose();
     super.onClose();
   }
 
-  void increment() => count.value++;
+  /// Set initial backend URL value
+  void setInitialUrl(String url) {
+    backendUrlController.text = url;
+  }
 }

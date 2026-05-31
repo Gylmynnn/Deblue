@@ -12,7 +12,11 @@ class BluetoothEventService extends GetxService {
   WebSocket? _socket;
   StreamSubscription? _subscription;
   Worker? _backendUrlWorker;
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 10;
 
+  /// StreamController dengan broadcast untuk event streaming
   final StreamController<BluetoothEventModel> _eventController =
       StreamController<BluetoothEventModel>.broadcast();
 
@@ -29,6 +33,7 @@ class BluetoothEventService extends GetxService {
       final wsUrl = _buildWebSocketUrl(_appController.backendUrl.value);
       _socket = await WebSocket.connect(wsUrl);
       connected.value = true;
+      _reconnectAttempts = 0; // Reset on successful connection
       _subscription = _socket?.listen(
         _handleMessage,
         onError: (_) {
@@ -71,8 +76,27 @@ class BluetoothEventService extends GetxService {
     connected.value = false;
   }
 
+  /// Exponential backoff reconnection strategy
   void _reconnectLater() {
-    Future.delayed(const Duration(seconds: 3), () {
+    // Cancel existing timer to avoid accumulation
+    _reconnectTimer?.cancel();
+
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      // After max attempts, reset and try again after longer delay
+      _reconnectAttempts = 0;
+      _reconnectTimer = Timer(const Duration(seconds: 30), () {
+        if (_socket == null) {
+          connect();
+        }
+      });
+      return;
+    }
+
+    // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s...
+    final delaySeconds = Duration(seconds: 1 << _reconnectAttempts);
+    _reconnectAttempts++;
+
+    _reconnectTimer = Timer(delaySeconds, () {
       if (_socket == null) {
         connect();
       }
@@ -101,6 +125,8 @@ class BluetoothEventService extends GetxService {
 
   @override
   void onClose() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _backendUrlWorker?.dispose();
     disconnect();
     _eventController.close();

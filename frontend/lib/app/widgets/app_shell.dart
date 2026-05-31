@@ -4,6 +4,39 @@ import 'package:frontend/app/controllers/app_controller.dart';
 import 'package:frontend/app/routes/app_pages.dart';
 import 'package:get/get.dart';
 
+// Cache gradients to avoid recomputation
+class _GradientCache {
+  static final Map<String, LinearGradient> _cache = {};
+
+  static LinearGradient getMobileGradient(BuildContext context) {
+    final key = 'mobile_${Theme.of(context).brightness}';
+    return _cache.putIfAbsent(key, () {
+      return LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Theme.of(context).scaffoldBackgroundColor,
+          Theme.of(context).colorScheme.surface.withValues(alpha: 0.45),
+        ],
+      );
+    });
+  }
+
+  static LinearGradient getDesktopGradient(BuildContext context) {
+    final key = 'desktop_${Theme.of(context).brightness}';
+    return _cache.putIfAbsent(key, () {
+      return LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Theme.of(context).scaffoldBackgroundColor,
+          Theme.of(context).colorScheme.surface.withValues(alpha: 0.58),
+        ],
+      );
+    });
+  }
+}
+
 class AppShell extends GetView<AppController> {
   const AppShell({
     super.key,
@@ -27,16 +60,7 @@ class AppShell extends GetView<AppController> {
             appBar: AppBar(title: Text(title), actions: actions),
             body: Container(
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Theme.of(context).scaffoldBackgroundColor,
-                    Theme.of(
-                      context,
-                    ).colorScheme.surface.withValues(alpha: 0.45),
-                  ],
-                ),
+                gradient: _GradientCache.getMobileGradient(context),
               ),
               child: child,
             ),
@@ -46,14 +70,7 @@ class AppShell extends GetView<AppController> {
         return Scaffold(
           body: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).scaffoldBackgroundColor,
-                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.58),
-                ],
-              ),
+              gradient: _GradientCache.getDesktopGradient(context),
             ),
             child: SafeArea(
               child: Row(
