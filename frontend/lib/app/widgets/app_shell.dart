@@ -238,31 +238,36 @@ class _Sidebar extends GetView<AppController> {
   void _showAppearanceModal(BuildContext context) {
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final offset = renderBox.localToGlobal(Offset.zero);
-    
+    final size = renderBox.size;
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Appearance',
       barrierColor: Colors.black.withValues(alpha: 0.3),
       transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return Align(
-          alignment: Alignment.topLeft,
-          child: Transform.translate(
-            offset: Offset(
-              offset.dx,
-              offset.dy + renderBox.size.height + 8,
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.95, end: 1.0).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: EdgeInsets.zero,
+          child: Stack(
+            children: [
+              Positioned(
+                left: offset.dx,
+                top: offset.dy + size.height + 8,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+                    CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                  ),
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: const _AppearancePopover(),
+                  ),
                 ),
-                alignment: Alignment.topLeft,
-                child: const _AppearancePopover(),
               ),
-            ),
+            ],
           ),
         );
       },
