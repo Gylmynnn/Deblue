@@ -662,7 +662,7 @@ class _AppearancePopover extends GetView<AppController> {
       return Material(
         color: Colors.transparent,
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 320),
+          constraints: const BoxConstraints(minWidth: 280, maxWidth: 360),
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
@@ -715,7 +715,7 @@ class _AppearancePopover extends GetView<AppController> {
                     value: controller.themeMode.value,
                     onChanged: controller.setThemeMode,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   Text(
                     'Device Layout',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -724,9 +724,12 @@ class _AppearancePopover extends GetView<AppController> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _LayoutModeSelector(
-                    value: controller.layoutMode.value,
-                    onChanged: controller.setLayoutMode,
+                  SizedBox(
+                    width: double.infinity,
+                    child: _LayoutModeSelector(
+                      value: controller.layoutMode.value,
+                      onChanged: controller.setLayoutMode,
+                    ),
                   ),
                 ],
               ),
@@ -925,21 +928,23 @@ class _LayoutModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<DeviceLayoutMode>(
+      multiSelectionEnabled: false,
+      emptySelectionAllowed: false,
       segments: const [
         ButtonSegment(
           value: DeviceLayoutMode.grid,
           icon: Icon(Icons.grid_view_rounded),
-          label: Text('Grid'),
+          tooltip: 'Grid',
         ),
         ButtonSegment(
           value: DeviceLayoutMode.tile,
           icon: Icon(Icons.view_agenda_rounded),
-          label: Text('Tile'),
+          tooltip: 'Tile',
         ),
         ButtonSegment(
           value: DeviceLayoutMode.compact,
           icon: Icon(Icons.view_headline_rounded),
-          label: Text('Compact'),
+          tooltip: 'Compact',
         ),
       ],
       selected: {value},
