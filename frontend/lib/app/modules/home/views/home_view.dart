@@ -194,6 +194,7 @@ class _FilterSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       return SegmentedButton<DeviceFilterMode>(
+      showSelectedIcon: false,
         selected: {controller.filterMode.value},
         onSelectionChanged: (value) {
           controller.setFilterMode(value.first);
@@ -831,9 +832,9 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-        color: (active ? AppColors.green : AppColors.darkSurfaceAlt).withValues(
+        color: (active ? AppColors.greenLight : AppColors.darkSurfaceAlt).withValues(
           alpha: 0.18,
         ),
         borderRadius: BorderRadius.circular(999),
@@ -842,7 +843,7 @@ class _StatusChip extends StatelessWidget {
         label,
         style: TextStyle(
           fontSize: 11,
-          color: active ? AppColors.green : null,
+          // color: active ? AppColors.green : null,
           fontWeight: FontWeight.w700,
         ),
       ),

@@ -186,44 +186,22 @@ class _Sidebar extends GetView<AppController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SidebarBrand(),
-          const SizedBox(height: 26),
-          _SidebarItem(
-            icon: Icons.bluetooth_rounded,
-            label: 'Devices',
-            active: currentRoute == Routes.HOME,
-            onTap: () {
-              if (Get.currentRoute != Routes.HOME) {
-                Get.offNamed(Routes.HOME);
-              }
-            },
+          const Spacer(),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: .circular(18),
+              color: Theme.of(
+                context,
+              ).scaffoldBackgroundColor.withValues(alpha: 0.65),
+            ),
+            child: Obx(() {
+              return _LayoutModeSelector(
+                value: controller.layoutMode.value,
+                onChanged: controller.setLayoutMode,
+              );
+            }),
           ),
           const SizedBox(height: 12),
-          _SidebarSection(title: 'Settings'),
-          const SizedBox(height: 8),
-          _SidebarItem(
-            icon: Icons.palette_rounded,
-            label: 'Appearance',
-            active: false,
-            onTap: () => _showAppearanceModal(context),
-            indent: true,
-          ),
-          const SizedBox(height: 6),
-          _SidebarItem(
-            icon: Icons.cloud_rounded,
-            label: 'Backend',
-            active: false,
-            onTap: () => _showBackendModal(context),
-            indent: true,
-          ),
-          const SizedBox(height: 6),
-          _SidebarItem(
-            icon: Icons.info_rounded,
-            label: 'About',
-            active: false,
-            onTap: () => _showAboutModal(context),
-            indent: true,
-          ),
-          const Spacer(),
           Obx(() {
             return _ThemeQuickToggle(
               isDark: controller.isDarkMode,
@@ -274,18 +252,8 @@ class _Sidebar extends GetView<AppController> {
     );
   }
 
-  void _showBackendModal(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const _BackendModal(),
-    );
-  }
-
   void _showAboutModal(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const _AboutModal(),
-    );
+    showDialog(context: context, builder: (context) => const _AboutModal());
   }
 }
 
@@ -303,7 +271,10 @@ class _MobileDrawer extends GetView<AppController> {
             const _DrawerBrand(),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 16,
+                ),
                 children: [
                   _DrawerItem(
                     icon: Icons.bluetooth_rounded,
@@ -318,12 +289,17 @@ class _MobileDrawer extends GetView<AppController> {
                   ),
                   const SizedBox(height: 12),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     child: Text(
                       'Settings',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                        color: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
@@ -335,17 +311,6 @@ class _MobileDrawer extends GetView<AppController> {
                     onTap: () {
                       Navigator.pop(context);
                       _showAppearanceModal(context);
-                    },
-                    indent: true,
-                  ),
-                  const SizedBox(height: 4),
-                  _DrawerItem(
-                    icon: Icons.cloud_rounded,
-                    label: 'Backend',
-                    active: false,
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showBackendModal(context);
                     },
                     indent: true,
                   ),
@@ -379,43 +344,37 @@ class _MobileDrawer extends GetView<AppController> {
   }
 
   void _showAppearanceModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Appearance'),
-          centerTitle: false,
-          leading: IconButton(
-            icon: const Icon(Icons.close_rounded),
-            onPressed: Navigator.of(context).pop,
+    Get.bottomSheet(
+      BottomSheet(
+        onClosing: () {},
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Appearance'),
+            toolbarHeight: 80,
+            leadingWidth: 100,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.close_rounded),
+              onPressed: Navigator.of(context).pop,
+            ),
           ),
-        ),
-        body: const SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: _AppearancePopover(),
+          body: const SingleChildScrollView(
+            child: Padding(padding: .all(16), child: _AppearancePopover()),
           ),
         ),
       ),
     );
   }
 
-  void _showBackendModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => const _BackendModal(),
-    );
-  }
-
   void _showAboutModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => const _AboutModal(),
+    Get.bottomSheet(
+      BottomSheet(onClosing: () {}, builder: (context) => _AboutModal()),
     );
+    // showModalBottomSheet(
+    //   context: context,
+    //   isScrollControlled: true,
+    //   builder: (context) => const _AboutModal(),
+    // );
   }
 }
 
@@ -446,11 +405,11 @@ class _DrawerBrand extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bluetint',
+                  'Deblue',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 SizedBox(height: 2),
-                Text('Local Bluetooth UI', style: TextStyle(fontSize: 12)),
+                Text('Bluetooth Manager', style: TextStyle(fontSize: 12)),
               ],
             ),
           ),
@@ -485,11 +444,11 @@ class _SidebarBrand extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Bluetint',
+                'Deblue',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
               ),
               SizedBox(height: 2),
-              Text('Local Bluetooth UI', style: TextStyle(fontSize: 12)),
+              Text('Bluetooth Manager', style: TextStyle(fontSize: 12)),
             ],
           ),
         ),
@@ -563,7 +522,9 @@ class _SidebarSection extends StatelessWidget {
         title,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.w700,
-          color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+          color: Theme.of(
+            context,
+          ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
         ),
       ),
     );
@@ -590,11 +551,13 @@ class _DrawerItem extends StatelessWidget {
     final color = active ? AppColors.green : null;
 
     return Material(
+      borderRadius: .circular(12),
       color: active
           ? AppColors.green.withValues(alpha: 0.12)
           : Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        borderRadius: .circular(12),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: indent ? 32 : 16,
@@ -665,22 +628,15 @@ class _AppearancePopover extends GetView<AppController> {
   Widget build(BuildContext context) {
     return Obx(() {
       return Material(
+        borderRadius: .only(topLeft: .circular(12), topRight: .circular(12)),
         color: Colors.transparent,
         child: Container(
-          constraints: const BoxConstraints(minWidth: 280, maxWidth: 360),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            // color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: Theme.of(context).dividerColor.withValues(alpha: 0.12),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: SingleChildScrollView(
             child: Padding(
@@ -694,12 +650,12 @@ class _AppearancePopover extends GetView<AppController> {
                     children: [
                       Text(
                         'Appearance',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                       // Close button only for popover (not in bottom sheet)
-                      if (Navigator.canPop(context) && MediaQuery.of(context).size.width >= 900)
+                      if (Navigator.canPop(context) &&
+                          MediaQuery.of(context).size.width >= 900)
                         IconButton(
                           icon: const Icon(Icons.close_rounded),
                           iconSize: 20,
@@ -712,7 +668,9 @@ class _AppearancePopover extends GetView<AppController> {
                     'Theme',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -725,16 +683,15 @@ class _AppearancePopover extends GetView<AppController> {
                     'Device Layout',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                      color: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: _LayoutModeSelector(
-                      value: controller.layoutMode.value,
-                      onChanged: controller.setLayoutMode,
-                    ),
+                  _LayoutModeSelector(
+                    value: controller.layoutMode.value,
+                    onChanged: controller.setLayoutMode,
                   ),
                 ],
               ),
@@ -746,66 +703,6 @@ class _AppearancePopover extends GetView<AppController> {
   }
 }
 
-// Backend Modal
-class _BackendModal extends GetView<AppController> {
-  const _BackendModal();
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: const EdgeInsets.all(24),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Backend'),
-          leading: IconButton(
-            icon: const Icon(Icons.close_rounded),
-            onPressed: Navigator.of(context).pop,
-          ),
-        ),
-        body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isCompact = constraints.maxWidth < 700;
-              final maxWidth = isCompact ? double.infinity : 760.0;
-
-               return Center(
-                 child: ConstrainedBox(
-                   constraints: BoxConstraints(maxWidth: maxWidth),
-                   child: ListView(
-                     padding: EdgeInsets.all(isCompact ? 14 : 24),
-                     children: [
-                       _SettingsSection(
-                         title: 'Backend URL',
-                         children: const [
-                           Text(
-                             'http://127.0.0.1:8787',
-                             style: TextStyle(
-                               fontFamily: 'monospace',
-                               fontSize: 12,
-                             ),
-                           ),
-                           SizedBox(height: 8),
-                           Text(
-                             'Backend URL is hardcoded for this application.',
-                             style: TextStyle(
-                               fontSize: 12,
-                               fontStyle: FontStyle.italic,
-                             ),
-                           ),
-                         ],
-                       ),
-                     ],
-                   ),
-                 ),
-               );
-             },
-           ),
-         ),
-       ),
-     );
-   }
- }
-
 // About Modal
 class _AboutModal extends StatelessWidget {
   const _AboutModal();
@@ -815,8 +712,10 @@ class _AboutModal extends StatelessWidget {
     return Dialog(
       insetPadding: const EdgeInsets.all(24),
       child: Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           title: const Text('About'),
+          backgroundColor: Colors.transparent,
           leading: IconButton(
             icon: const Icon(Icons.close_rounded),
             onPressed: Navigator.of(context).pop,
@@ -830,36 +729,36 @@ class _AboutModal extends StatelessWidget {
 
               return Center(
                 child: ConstrainedBox(
-                   constraints: BoxConstraints(maxWidth: maxWidth),
-                   child: ListView(
-                     padding: EdgeInsets.all(isCompact ? 14 : 24),
-                     children: [
-                       _SettingsSection(
-                         title: 'About',
-                         children: const [
-                           ListTile(
-                             leading: Icon(
-                               Icons.bluetooth_rounded,
-                               color: AppColors.green,
-                             ),
-                             title: Text('Bluetooth Manager'),
-                             subtitle: Text(
-                               'Flutter + GetX frontend with Go BlueZ backend.',
-                             ),
-                           ),
-                         ],
-                       ),
-                     ],
-                   ),
-                 ),
-               );
-             },
-           ),
-         ),
-       ),
-     );
-   }
- }
+                  constraints: BoxConstraints(maxWidth: maxWidth),
+                  child: ListView(
+                    padding: EdgeInsets.all(isCompact ? 14 : 24),
+                    children: [
+                      _SettingsSection(
+                        title: 'About',
+                        children: const [
+                          ListTile(
+                            leading: Icon(
+                              Icons.bluetooth_rounded,
+                              color: AppColors.green,
+                            ),
+                            title: Text('Bluetooth Manager'),
+                            subtitle: Text(
+                              'Flutter + GetX frontend with Go BlueZ backend.',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _SettingsSection extends StatelessWidget {
   const _SettingsSection({required this.title, required this.children});
@@ -899,6 +798,7 @@ class _ThemeModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<ThemeMode>(
+      showSelectedIcon: false,
       segments: const [
         ButtonSegment(
           value: ThemeMode.dark,
@@ -933,6 +833,12 @@ class _LayoutModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<DeviceLayoutMode>(
+      style: ButtonStyle(
+        padding: .all(.symmetric(vertical: 16)),
+        iconSize: .all(32),
+      ),
+      expandedInsets: .all(12),
+      showSelectedIcon: false,
       multiSelectionEnabled: false,
       emptySelectionAllowed: false,
       segments: const [

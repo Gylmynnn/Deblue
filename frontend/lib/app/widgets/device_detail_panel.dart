@@ -4,12 +4,8 @@ import 'package:frontend/app/data/models/device_model.dart';
 import 'package:frontend/app/modules/home/controllers/home_controller.dart';
 import 'package:get/get.dart';
 
-
 class DeviceDetailPanel extends GetView<HomeController> {
-  const DeviceDetailPanel({
-    super.key,
-    required this.device,
-  });
+  const DeviceDetailPanel({super.key, required this.device});
 
   final DeviceModel device;
 
@@ -43,8 +39,8 @@ class DeviceDetailPanel extends GetView<HomeController> {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                    ),
+                  fontWeight: FontWeight.w900,
+                ),
               ),
 
               const SizedBox(height: 6),
@@ -87,32 +83,30 @@ class DeviceDetailPanel extends GetView<HomeController> {
 
               const SizedBox(height: 22),
 
-              _InfoBox(
-                label: 'D-Bus Path',
-                value: device.path,
-              ),
+              _InfoBox(label: 'D-Bus Path', value: device.path),
 
               const SizedBox(height: 18),
 
-              FilledButton.icon(
-                onPressed: isLoading
-                    ? null
-                    : () {
-                        connected
-                            ? controller.disconnect(device)
-                            : controller.connect(device);
-                      },
-                icon: isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(
-                        connected ? Icons.link_off_rounded : Icons.link_rounded,
-                      ),
-                label: Text(
-                  connected ? 'Disconnect' : 'Connect',
+              SizedBox(
+              width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          connected
+                              ? controller.disconnect(device)
+                              : controller.connect(device);
+                        },
+                  icon: isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          connected ? Icons.link_off_rounded : Icons.link_rounded,
+                        ),
+                  label: Text(connected ? 'Disconnect' : 'Connect'),
                 ),
               ),
 
@@ -131,10 +125,9 @@ class DeviceDetailPanel extends GetView<HomeController> {
                     label: const Text('Pair device'),
                   ),
                 ),
-
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
+                child: FilledButton.icon(
                   onPressed: isLoading
                       ? null
                       : () {
@@ -151,20 +144,16 @@ class DeviceDetailPanel extends GetView<HomeController> {
                 ),
               ),
 
-              const Spacer(),
-
+              const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
+                child: FilledButton.icon(
                   onPressed: isLoading
                       ? null
                       : () {
                           _confirmRemove();
                         },
-                  icon: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.red,
-                  ),
+                  icon: const Icon(Icons.delete_outline_rounded),
                   label: const Text('Remove device'),
                 ),
               ),
@@ -179,14 +168,9 @@ class DeviceDetailPanel extends GetView<HomeController> {
     Get.dialog(
       AlertDialog(
         title: const Text('Remove device?'),
-        content: Text(
-          'Remove ${device.nameOrUnknown} from paired devices?',
-        ),
+        content: Text('Remove ${device.nameOrUnknown} from paired devices?'),
         actions: [
-          TextButton(
-            onPressed: Get.back,
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: Get.back, child: const Text('Cancel')),
           FilledButton(
             onPressed: () async {
               Get.back();
@@ -203,9 +187,7 @@ class DeviceDetailPanel extends GetView<HomeController> {
 }
 
 class _DeviceIcon extends StatelessWidget {
-  const _DeviceIcon({
-    required this.device,
-  });
+  const _DeviceIcon({required this.device});
 
   final DeviceModel device;
 
@@ -244,16 +226,14 @@ class _PanelChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppColors.green : Theme.of(context).iconTheme.color;
+    final color = Theme.of(context).iconTheme.color;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 11,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
       decoration: BoxDecoration(
-        color: (active ? AppColors.green : Theme.of(context).colorScheme.surface)
-            .withValues(alpha: active ? 0.16 : 0.70),
+        color:
+            (active ? AppColors.greenLight : Theme.of(context).colorScheme.surface)
+                .withValues(alpha: active ? 0.16 : 0.70),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: active
@@ -271,7 +251,7 @@ class _PanelChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: active ? AppColors.green : null,
+              // color: active ? AppColors.green : null,
             ),
           ),
         ],
@@ -281,10 +261,7 @@ class _PanelChip extends StatelessWidget {
 }
 
 class _InfoBox extends StatelessWidget {
-  const _InfoBox({
-    required this.label,
-    required this.value,
-  });
+  const _InfoBox({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -295,7 +272,9 @@ class _InfoBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.55),
+        color: Theme.of(
+          context,
+        ).scaffoldBackgroundColor.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
@@ -306,10 +285,7 @@ class _InfoBox extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-            ),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           SelectableText(

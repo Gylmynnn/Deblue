@@ -21,10 +21,15 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: AppColors.blue,
-            width: 2,
+          borderSide: BorderSide(color: AppColors.blue, width: 2),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
+          side: WidgetStatePropertyAll(BorderSide.none),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -45,7 +50,7 @@ class AppTheme {
       ),
       colorScheme: const ColorScheme.dark(
         primary: AppColors.green,
-        secondary: AppColors.blue,
+        secondary: AppColors.green,
         surface: AppColors.darkSurface,
         error: AppColors.red,
       ),
@@ -87,10 +92,16 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: AppColors.blueLight,
-            width: 2,
+          borderSide: BorderSide(color: AppColors.blueLight, width: 2),
+        ),
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: ButtonStyle(
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
+          side: WidgetStatePropertyAll(BorderSide.none),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -103,6 +114,7 @@ class AppTheme {
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
+          iconColor: .all(AppColors.darkSurface),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
@@ -111,7 +123,7 @@ class AppTheme {
       ),
       colorScheme: const ColorScheme.light(
         primary: AppColors.greenLight,
-        secondary: AppColors.blueLight,
+        secondary: AppColors.greenLight,
         surface: AppColors.lightSurface,
         error: AppColors.red,
       ),
