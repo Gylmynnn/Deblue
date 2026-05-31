@@ -5,7 +5,6 @@ import 'package:frontend/app/data/models/device_model.dart';
 import 'package:frontend/app/data/services/backend_process_service.dart';
 import 'package:frontend/app/data/services/bluetooth_event_service.dart';
 import 'package:frontend/app/modules/home/controllers/home_controller.dart';
-import 'package:frontend/app/routes/app_pages.dart';
 import 'package:frontend/app/widgets/app_shell.dart';
 import 'package:frontend/app/widgets/device_detail_dialog.dart';
 import 'package:frontend/app/widgets/device_detail_panel.dart';
@@ -27,12 +26,6 @@ class HomeView extends GetView<AppController> {
               Get.find<HomeController>().refreshData();
             },
             icon: const Icon(Icons.refresh_rounded),
-          ),
-          IconButton(
-            onPressed: () {
-              Get.toNamed(Routes.SETTINGS);
-            },
-            icon: const Icon(Icons.settings_rounded),
           ),
         ],
         child: SafeArea(

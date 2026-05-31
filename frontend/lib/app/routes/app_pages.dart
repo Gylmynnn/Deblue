@@ -1,7 +1,5 @@
 // ignore_for_file: constant_identifier_names
 
-import 'package:frontend/app/modules/settings/bindings/settings_binding.dart';
-import 'package:frontend/app/modules/settings/views/settings_view.dart';
 import 'package:get/get.dart';
 
 import '../modules/home/bindings/home_binding.dart';
@@ -19,12 +17,6 @@ class AppPages {
       name: _Paths.HOME,
       page: () => const HomeView(),
       binding: HomeBinding(),
-    ),
-
-    GetPage(
-      name: _Paths.SETTINGS,
-      page: () => const SettingsView(),
-      binding: SettingsBinding(),
     ),
   ];
 }
