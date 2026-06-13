@@ -1,0 +1,15 @@
+pkgbase = deblue
+	pkgdesc = Bluetooth Manager - Flutter GUI with Go backend
+	pkgver = 1.0.0
+	pkgrel = 1
+	url = https://github.com/Gylmynnn/deblue
+	arch = x86_64
+	license = custom
+	depends = gtk3
+	depends = bluez
+	depends = dbus
+	makedepends = tar
+	source = deblue-1.0.0.tar.gz::https://github.com/Gylmynnn/deblue/archive/v1.0.0.tar.gz
+	sha256sums = SKIP
+
+pkgname = deblue

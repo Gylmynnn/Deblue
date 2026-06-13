@@ -1,0 +1,45 @@
+# Maintainer: Gylmynnn <muhamadgilman999@gmail.com>
+# Contributor: Gylmynnn <muhamadgilman999@gmail.com>
+
+pkgname=deblue
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Bluetooth Manager - Flutter GUI with Go backend"
+arch=('x86_64')
+url="https://github.com/Gylmynnn/deblue"
+license=('custom')
+depends=('gtk3' 'bluez' 'dbus')
+makedepends=('tar')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/Gylmynnn/deblue/archive/v$pkgver.tar.gz")
+sha256sums=('884a8fde99f5f54079d0b819154983686e92550aafdc67448d341f146afa7aaf')
+
+package() {
+  cd "$srcdir"/*/
+  local appdir="$pkgdir/usr/lib/deblue"
+  mkdir -p "$appdir"
+  cp -r bundle/data "$appdir/data"
+  cp -r bundle/lib "$appdir/lib"
+  cp bundle/frontend "$appdir/frontend"
+  chmod 755 "$appdir/frontend"
+  install -Dm755 backend/bin/deblue "$appdir/deblue-server"
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/deblue" << 'EOF'
+#!/bin/bash
+exec /usr/lib/deblue/frontend
+EOF
+
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/deblue.desktop" << 'EOF'
+[Desktop Entry]
+Name=Deblue
+Comment=Bluetooth Manager
+Exec=/usr/bin/deblue
+Icon=deblue
+Type=Application
+Categories=Utility;Network;
+Terminal=false
+EOF
+
+  install -Dm644 frontend/web/icons/Icon-512.png \
+    "$pkgdir/usr/share/icons/hicolor/512x512/apps/deblue.png"
+  install -Dm644 frontend/web/icons/Icon-192.png \
+    "$pkgdir/usr/share/icons/hicolor/192x192/apps/deblue.png"
+}
