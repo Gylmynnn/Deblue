@@ -14,6 +14,8 @@ class HomeController extends GetxController {
 
   StreamSubscription? _eventSubscription;
   Timer? _refreshDebounce;
+  bool _refreshing = false;
+  bool _refreshQueued = false;
   final RxBool loading = false.obs;
   final RxBool scanning = false.obs;
   final Rxn<AdapterModel> adapter = Rxn<AdapterModel>();
@@ -31,6 +33,8 @@ class HomeController extends GetxController {
   void onClose() {
     _eventSubscription?.cancel();
     _refreshDebounce?.cancel();
+    // Don't leave the native Rust listener thread + D-Bus match rules alive.
+    _eventService.disconnect();
     super.onClose();
   }
 
@@ -40,11 +44,13 @@ class HomeController extends GetxController {
   }
 
   List<DeviceModel> get filteredDevices {
-    final query = _appController.searchQuery.value.toLowerCase().trim();
+    // Uses the debounced query (already trimmed + lowercased in AppController)
+    // so typing doesn't recompute O(N) toLowerCase on every keystroke.
+    final query = _appController.debouncedSearchQuery.value;
     final filter = _appController.filterMode.value;
 
     return devices.where((device) {
-      final matchesSearch =
+      final matchesSearch = query.isEmpty ||
           device.name.toLowerCase().contains(query) ||
           device.address.toLowerCase().contains(query);
 
@@ -59,19 +65,27 @@ class HomeController extends GetxController {
   }
 
   void selectDevice(DeviceModel device) {
+    final oldPath = selectedDevice.value?.path;
     selectedDevice.value = device;
+    // Only rebuild the two affected cards instead of the whole list.
+    if (oldPath != null) update(['device_$oldPath']);
+    update(['device_${device.path}']);
   }
 
   void clearSelectedDevice() {
+    final oldPath = selectedDevice.value?.path;
     selectedDevice.value = null;
+    if (oldPath != null) update(['device_$oldPath']);
   }
 
   Future<void> _connectEventStream() async {
     await _eventService.connect();
     _eventSubscription = _eventService.events.listen((_) {
       _refreshDebounce?.cancel();
-      _refreshDebounce = Timer(const Duration(milliseconds: 400), () {
-        refreshData();
+      // 1000ms: BlueZ RSSI PropertiesChanged can burst at tens/sec during
+      // discovery; the Rust side already throttles per-path to 800ms.
+      _refreshDebounce = Timer(const Duration(milliseconds: 1000), () {
+        refreshData(silent: true);
       });
     });
   }
@@ -86,6 +100,8 @@ class HomeController extends GetxController {
     } else {
       loadingDevicePaths.remove(path);
     }
+    // Targeted rebuild of just this card (GetBuilder id in home_view).
+    update(['device_$path']);
   }
 
   Future<void> _runDeviceAction({
@@ -123,7 +139,7 @@ class HomeController extends GetxController {
       await _service.startScan();
       scanStarted = true;
       await Future.delayed(const Duration(seconds: 4));
-      await refreshData();
+      await refreshData(silent: true);
     } catch (error) {
       Get.snackbar(
         'Scan Error',
@@ -194,11 +210,22 @@ class HomeController extends GetxController {
     );
   }
 
-  Future<void> refreshData() async {
+  Future<void> refreshData({bool silent = false}) async {
+    // Coalesce overlapping refreshes (event burst + scan + manual).
+    if (_refreshing) {
+      _refreshQueued = true;
+      return;
+    }
+    _refreshing = true;
     try {
-      loading.value = true;
-      adapter.value = await _service.getAdapter();
-      final latestDevices = await _service.getDevices();
+      if (!silent) loading.value = true;
+      // Parallelize the two FFI round-trips instead of sequential awaits.
+      final results = await Future.wait([
+        _service.getAdapter(),
+        _service.getDevices(),
+      ]);
+      adapter.value = results[0] as AdapterModel?;
+      final latestDevices = results[1] as List<DeviceModel>;
       devices.assignAll(latestDevices);
       final selected = selectedDevice.value;
       if (selected != null) {
@@ -214,7 +241,13 @@ class HomeController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
-      loading.value = false;
+      if (!silent) loading.value = false;
+      _refreshing = false;
+      // Run one coalesced refresh if requests arrived while busy.
+      if (_refreshQueued) {
+        _refreshQueued = false;
+        refreshData(silent: silent);
+      }
     }
   }
 
@@ -224,7 +257,6 @@ class HomeController extends GetxController {
       return;
     }
     try {
-      loading.value = true;
       await _service.setPower(!current.powered);
       await refreshData();
       Get.snackbar(

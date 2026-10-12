@@ -1,0 +1,114 @@
+name: Build AppImage
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev \
+            file curl desktop-file-utils
+
+      - name: Versions
+        run: |
+          flutter --version
+          rustc --version
+          cargo --version
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build Linux release
+        run: flutter build linux --release
+
+      - name: Assemble AppDir
+        run: |
+          mkdir -p AppDir/usr/bin \
+            AppDir/usr/share/applications \
+            AppDir/usr/share/icons/hicolor/512x512/apps
+          cp -r build/linux/x64/release/bundle/debluev2 \
+            build/linux/x64/release/bundle/lib \
+            build/linux/x64/release/bundle/data \
+            AppDir/usr/bin/
+          cp web/icons/Icon-512.png AppDir/debluev2.png
+          cp web/icons/Icon-512.png \
+            AppDir/usr/share/icons/hicolor/512x512/apps/debluev2.png
+          cat > AppDir/AppRun <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          export LD_LIBRARY_PATH="$HERE/usr/bin/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          exec "$HERE/usr/bin/debluev2" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+          cat > AppDir/debluev2.desktop <<'EOF'
+          [Desktop Entry]
+          Name=Deblue
+          GenericName=Bluetooth Manager
+          Comment=Bluetooth Manager
+          Exec=debluev2
+          Icon=debluev2
+          Type=Application
+          Categories=Utility;
+          StartupWMClass=debluev2
+          EOF
+          cp AppDir/debluev2.desktop AppDir/usr/share/applications/
+          ln -sf debluev2.png AppDir/.DirIcon
+          desktop-file-validate AppDir/debluev2.desktop
+
+      - name: Download appimagetool
+        run: |
+          curl -sL -o appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool
+          # Extract instead of running directly: works without FUSE
+          ./appimagetool --appimage-extract
+
+      - name: Build AppImage
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME}"
+          else
+            VERSION="dev-${GITHUB_SHA::7}"
+          fi
+          echo "APPIMAGE_NAME=Deblue-${VERSION}-x86_64.AppImage" >> "$GITHUB_ENV"
+          ARCH=x86_64 ./squashfs-root/AppRun AppDir "Deblue-${VERSION}-x86_64.AppImage"
+          ls -la Deblue-*.AppImage
+
+      - name: Upload artifact (CI builds)
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        uses: actions/upload-artifact@v4
+        with:
+          name: Deblue-AppImage
+          path: Deblue-*.AppImage
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: Deblue-*.AppImage
+          generate_release_notes: true

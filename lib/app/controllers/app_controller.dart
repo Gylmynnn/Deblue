@@ -14,7 +14,9 @@ class AppController extends GetxController {
   final Rx<ThemeMode> themeMode = ThemeMode.dark.obs;
   final Rx<DeviceLayoutMode> layoutMode = DeviceLayoutMode.grid.obs;
   final RxString searchQuery = ''.obs;
+  final RxString debouncedSearchQuery = ''.obs;
   final Rx<DeviceFilterMode> filterMode = DeviceFilterMode.all.obs;
+  Worker? _searchDebounce;
 
   void setSearchQuery(String value) {
     searchQuery.value = value;
@@ -29,7 +31,20 @@ class AppController extends GetxController {
   @override
   void onInit() {
     _loadSettings();
+    // Debounce search so every keystroke doesn't recompute the device filter
+    // (which does O(N) toLowerCase + toList) and rebuild the list twice.
+    _searchDebounce = debounce(
+      searchQuery,
+      (value) => debouncedSearchQuery.value = value.trim().toLowerCase(),
+      time: const Duration(milliseconds: 300),
+    );
     super.onInit();
+  }
+
+  @override
+  void onClose() {
+    _searchDebounce?.dispose();
+    super.onClose();
   }
 
   void _loadSettings() {

@@ -14,15 +14,13 @@ class HomeView extends GetView<AppController> {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final layoutMode = controller.layoutMode.value;
-
-      return AppShell(
+    final homeController = Get.find<HomeController>();
+    return AppShell(
         title: 'Devices',
         actions: [
           IconButton(
             onPressed: () {
-              Get.find<HomeController>().refreshData();
+              homeController.refreshData();
             },
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Refresh',
@@ -57,8 +55,7 @@ class HomeView extends GetView<AppController> {
                         ),
                         const SizedBox(width: 10),
                         Obx(() {
-                          final total =
-                              Get.find<HomeController>().filteredDevices.length;
+                          final total = homeController.filteredDevices.length;
 
                           return _StatusChip(
                             label: '$total found',
@@ -69,9 +66,13 @@ class HomeView extends GetView<AppController> {
                     ),
                     const SizedBox(height: 12),
                     Expanded(
+                      // Narrow scope: only the list/detail area rebuilds when
+                      // layoutMode or selectedDevice changes — header/toolbar
+                      // above stay intact.
                       child: Obx(() {
+                        final layoutMode = controller.layoutMode.value;
                         final selectedDevice =
-                            Get.find<HomeController>().selectedDevice.value;
+                            homeController.selectedDevice.value;
 
                         final showDetailPanel =
                             selectedDevice != null &&
@@ -109,7 +110,6 @@ class HomeView extends GetView<AppController> {
           ),
         ),
       );
-    });
   }
 }
 
@@ -633,9 +633,15 @@ class _DeviceGridCard extends GetView<HomeController> {
   Widget build(BuildContext context) {
     final bool connected = device.connected;
 
-    return Obx(() {
-      final bool selected = isSelectedDevice(device);
-      final bool isLoading = controller.isDeviceLoading(device.path);
+    // Targeted rebuild: only this card refreshes when its own loading or
+    // selection state changes (see update(['device_<path>']) in
+    // HomeController). Previously an Obx on the shared RxSet rebuilt all N
+    // cards on every single device action.
+    return GetBuilder<HomeController>(
+      id: 'device_${device.path}',
+      builder: (c) {
+      final bool selected = c.selectedDevice.value?.path == device.path;
+      final bool isLoading = c.isDeviceLoading(device.path);
       return Card(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(22),
@@ -712,7 +718,8 @@ class _DeviceGridCard extends GetView<HomeController> {
           ),
         ),
       );
-    });
+      },
+    );
   }
 }
 
