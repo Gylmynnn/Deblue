@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:debluev2/src/rust/api/simple.dart';
-import 'package:debluev2/src/rust/frb_generated.dart';
+import 'package:desys/src/rust/api/simple.dart';
+import 'package:desys/src/rust/frb_generated.dart';
 import 'package:integration_test/integration_test.dart';
 
 void main() {

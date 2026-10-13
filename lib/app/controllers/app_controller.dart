@@ -6,13 +6,17 @@ enum DeviceLayoutMode { grid, tile, compact }
 
 enum DeviceFilterMode { all, connected, paired }
 
+enum SystemModule { bluetooth, wifi }
+
 class AppController extends GetxController {
   static const String _themeKey = 'theme_mode';
   static const String _layoutKey = 'layout_mode';
+  static const String _moduleKey = 'module';
   final GetStorage _storage = GetStorage();
 
   final Rx<ThemeMode> themeMode = ThemeMode.dark.obs;
   final Rx<DeviceLayoutMode> layoutMode = DeviceLayoutMode.grid.obs;
+  final Rx<SystemModule> selectedModule = SystemModule.bluetooth.obs;
   final RxString searchQuery = ''.obs;
   final RxString debouncedSearchQuery = ''.obs;
   final Rx<DeviceFilterMode> filterMode = DeviceFilterMode.all.obs;
@@ -50,9 +54,11 @@ class AppController extends GetxController {
   void _loadSettings() {
     final String? savedTheme = _storage.read<String>(_themeKey);
     final String? savedLayout = _storage.read<String>(_layoutKey);
+    final String? savedModule = _storage.read<String>(_moduleKey);
 
     themeMode.value = _themeFromString(savedTheme);
     layoutMode.value = _layoutFromString(savedLayout);
+    selectedModule.value = _moduleFromString(savedModule);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -68,6 +74,11 @@ class AppController extends GetxController {
   Future<void> setLayoutMode(DeviceLayoutMode mode) async {
     layoutMode.value = mode;
     await _storage.write(_layoutKey, mode.name);
+  }
+
+  Future<void> setModule(SystemModule module) async {
+    selectedModule.value = module;
+    await _storage.write(_moduleKey, module.name);
   }
 
   ThemeMode _themeFromString(String? value) {
@@ -92,7 +103,6 @@ class AppController extends GetxController {
         return 'dark';
     }
   }
-
   DeviceLayoutMode _layoutFromString(String? value) {
     switch (value) {
       case 'tile':
@@ -102,6 +112,16 @@ class AppController extends GetxController {
       case 'grid':
       default:
         return DeviceLayoutMode.grid;
+    }
+  }
+
+  SystemModule _moduleFromString(String? value) {
+    switch (value) {
+      case 'wifi':
+        return SystemModule.wifi;
+      case 'bluetooth':
+      default:
+        return SystemModule.bluetooth;
     }
   }
 }

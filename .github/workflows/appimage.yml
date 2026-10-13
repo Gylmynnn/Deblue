@@ -51,34 +51,34 @@ jobs:
           mkdir -p AppDir/usr/bin \
             AppDir/usr/share/applications \
             AppDir/usr/share/icons/hicolor/512x512/apps
-          cp -r build/linux/x64/release/bundle/debluev2 \
+          cp -r build/linux/x64/release/bundle/desys \
             build/linux/x64/release/bundle/lib \
             build/linux/x64/release/bundle/data \
             AppDir/usr/bin/
-          cp web/icons/Icon-512.png AppDir/debluev2.png
+          cp web/icons/Icon-512.png AppDir/desys.png
           cp web/icons/Icon-512.png \
-            AppDir/usr/share/icons/hicolor/512x512/apps/debluev2.png
+            AppDir/usr/share/icons/hicolor/512x512/apps/desys.png
           cat > AppDir/AppRun <<'EOF'
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "$0")")"
           export LD_LIBRARY_PATH="$HERE/usr/bin/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-          exec "$HERE/usr/bin/debluev2" "$@"
+          exec "$HERE/usr/bin/desys" "$@"
           EOF
           chmod +x AppDir/AppRun
-          cat > AppDir/debluev2.desktop <<'EOF'
+          cat > AppDir/desys.desktop <<'EOF'
           [Desktop Entry]
-          Name=Deblue
-          GenericName=Bluetooth Manager
-          Comment=Bluetooth Manager
-          Exec=debluev2
-          Icon=debluev2
+          Name=DeSys
+          GenericName=System Settings
+          Comment=Linux system settings manager (Bluetooth, WiFi, Sound)
+          Exec=desys
+          Icon=desys
           Type=Application
-          Categories=Utility;
-          StartupWMClass=debluev2
+          Categories=Utility;Settings;
+          StartupWMClass=desys
           EOF
-          cp AppDir/debluev2.desktop AppDir/usr/share/applications/
-          ln -sf debluev2.png AppDir/.DirIcon
-          desktop-file-validate AppDir/debluev2.desktop
+          cp AppDir/desys.desktop AppDir/usr/share/applications/
+          ln -sf desys.png AppDir/.DirIcon
+          desktop-file-validate AppDir/desys.desktop
 
       - name: Download appimagetool
         run: |
@@ -95,20 +95,20 @@ jobs:
           else
             VERSION="dev-${GITHUB_SHA::7}"
           fi
-          echo "APPIMAGE_NAME=Deblue-${VERSION}-x86_64.AppImage" >> "$GITHUB_ENV"
-          ARCH=x86_64 ./squashfs-root/AppRun AppDir "Deblue-${VERSION}-x86_64.AppImage"
-          ls -la Deblue-*.AppImage
+          echo "APPIMAGE_NAME=DeSys-${VERSION}-x86_64.AppImage" >> "$GITHUB_ENV"
+          ARCH=x86_64 ./squashfs-root/AppRun AppDir "DeSys-${VERSION}-x86_64.AppImage"
+          ls -la DeSys-*.AppImage
 
       - name: Upload artifact (CI builds)
         if: "!startsWith(github.ref, 'refs/tags/')"
         uses: actions/upload-artifact@v4
         with:
-          name: Deblue-AppImage
-          path: Deblue-*.AppImage
+          name: DeSys-AppImage
+          path: DeSys-*.AppImage
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: Deblue-*.AppImage
+          files: DeSys-*.AppImage
           generate_release_notes: true

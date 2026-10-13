@@ -26,7 +26,6 @@ class AppShell extends GetView<AppController> {
           return Scaffold(
             appBar: AppBar(
               title: Text(title),
-              automaticallyImplyLeading: false,
               actions: [
                 ...actions,
                 IconButton(
@@ -42,6 +41,7 @@ class AppShell extends GetView<AppController> {
                 ),
               ],
             ),
+            drawer: const Drawer(child: SafeArea(child: _SidebarNav())),
             body: Container(
               color: Theme.of(context).scaffoldBackgroundColor,
               child: child,
@@ -121,7 +121,10 @@ class _Sidebar extends GetView<AppController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SidebarBrand(),
+          const SizedBox(height: 16),
+          const _SidebarNav(),
           const Spacer(),
+          // Device layout (grid/tile/compact) applies to every module list.
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
@@ -174,15 +177,141 @@ class _SidebarBrand extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Deblue',
+                'DeSys',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
               ),
               SizedBox(height: 2),
-              Text('Bluetooth Manager (v2 Rust)', style: TextStyle(fontSize: 12)),
+              Text('System Settings', style: TextStyle(fontSize: 12)),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SidebarNav extends GetView<AppController> {
+  const _SidebarNav();
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final module = controller.selectedModule.value;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _NavItem(
+            icon: Icons.bluetooth_rounded,
+            label: 'Bluetooth',
+            selected: module == SystemModule.bluetooth,
+            onTap: () => _goTo(SystemModule.bluetooth),
+          ),
+          const SizedBox(height: 6),
+          _NavItem(
+            icon: Icons.wifi_rounded,
+            label: 'WiFi',
+            selected: module == SystemModule.wifi,
+            onTap: () => _goTo(SystemModule.wifi),
+          ),
+          const SizedBox(height: 6),
+          const _NavItem(
+            icon: Icons.volume_up_rounded,
+            label: 'Sound',
+            selected: false,
+            enabled: false,
+            trailing: 'Soon',
+          ),
+        ],
+      );
+    });
+  }
+
+  void _goTo(SystemModule module) {
+    // In-place tab switch: no route change, so nothing reloads.
+    controller.setModule(module);
+    // Close the mobile drawer if it is open.
+    final ctx = Get.context;
+    if (ctx == null) return;
+    final scaffold = Scaffold.maybeOf(ctx);
+    if (scaffold != null && scaffold.isDrawerOpen) {
+      Navigator.of(ctx).pop();
+    }
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    this.enabled = true,
+    this.trailing,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final String? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final background = selected
+        ? colorScheme.primary.withValues(alpha: 0.14)
+        : Colors.transparent;
+    final foreground = selected
+        ? colorScheme.primary
+        : Theme.of(context).textTheme.bodyLarge?.color;
+
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: enabled ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(icon, color: foreground),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    color: foreground,
+                  ),
+                ),
+              ),
+              if (trailing != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).scaffoldBackgroundColor.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    trailing!,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

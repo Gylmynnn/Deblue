@@ -8,6 +8,7 @@
 
 import 'api/bluetooth.dart';
 import 'api/simple.dart';
+import 'api/wifi.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -31,6 +32,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RustStreamSink<BluetoothEvent> dco_decode_StreamSink_bluetooth_event_Sse(
     dynamic raw,
   );
+
+  @protected
+  RustStreamSink<WifiEvent> dco_decode_StreamSink_wifi_event_Sse(dynamic raw);
 
   @protected
   String dco_decode_String(dynamic raw);
@@ -57,16 +61,42 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  List<WifiDevice> dco_decode_list_wifi_device(dynamic raw);
+
+  @protected
+  List<WifiNetwork> dco_decode_list_wifi_network(dynamic raw);
+
+  @protected
+  int dco_decode_u_32(dynamic raw);
+
+  @protected
   int dco_decode_u_8(dynamic raw);
 
   @protected
   void dco_decode_unit(dynamic raw);
 
   @protected
+  WifiDevice dco_decode_wifi_device(dynamic raw);
+
+  @protected
+  WifiEvent dco_decode_wifi_event(dynamic raw);
+
+  @protected
+  WifiNetwork dco_decode_wifi_network(dynamic raw);
+
+  @protected
+  WifiStatus dco_decode_wifi_status(dynamic raw);
+
+  @protected
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
 
   @protected
   RustStreamSink<BluetoothEvent> sse_decode_StreamSink_bluetooth_event_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<WifiEvent> sse_decode_StreamSink_wifi_event_Sse(
     SseDeserializer deserializer,
   );
 
@@ -97,10 +127,31 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  List<WifiDevice> sse_decode_list_wifi_device(SseDeserializer deserializer);
+
+  @protected
+  List<WifiNetwork> sse_decode_list_wifi_network(SseDeserializer deserializer);
+
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_u_8(SseDeserializer deserializer);
 
   @protected
   void sse_decode_unit(SseDeserializer deserializer);
+
+  @protected
+  WifiDevice sse_decode_wifi_device(SseDeserializer deserializer);
+
+  @protected
+  WifiEvent sse_decode_wifi_event(SseDeserializer deserializer);
+
+  @protected
+  WifiNetwork sse_decode_wifi_network(SseDeserializer deserializer);
+
+  @protected
+  WifiStatus sse_decode_wifi_status(SseDeserializer deserializer);
 
   @protected
   int sse_decode_i_32(SseDeserializer deserializer);
@@ -114,6 +165,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_StreamSink_bluetooth_event_Sse(
     RustStreamSink<BluetoothEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_wifi_event_Sse(
+    RustStreamSink<WifiEvent> self,
     SseSerializer serializer,
   );
 
@@ -154,10 +211,37 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_wifi_device(
+    List<WifiDevice> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_wifi_network(
+    List<WifiNetwork> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_unit(void self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_wifi_device(WifiDevice self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_wifi_event(WifiEvent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_wifi_network(WifiNetwork self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_wifi_status(WifiStatus self, SseSerializer serializer);
 
   @protected
   void sse_encode_i_32(int self, SseSerializer serializer);

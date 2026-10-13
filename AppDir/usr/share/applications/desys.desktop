@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=DeSys
+GenericName=System Settings
+Comment=Linux system settings manager (Bluetooth, WiFi, Sound)
+Exec=desys
+Icon=desys
+Type=Application
+Categories=Utility;Settings;
+StartupWMClass=desys

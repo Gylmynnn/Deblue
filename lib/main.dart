@@ -25,18 +25,18 @@ Future<void> main() async {
   });
   await GetStorage.init();
   AppBinding().dependencies();
-  runApp(const Deblue());
+  runApp(const DeSys());
 }
 
-class Deblue extends GetView<AppController> {
-  const Deblue({super.key});
+class DeSys extends GetView<AppController> {
+  const DeSys({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       return GetMaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Deblue Bluetooth Manager',
+        title: 'DeSys - System Settings',
         initialRoute: Routes.HOME,
         getPages: AppPages.routes,
         theme: AppTheme.light(),

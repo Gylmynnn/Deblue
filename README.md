@@ -1,8 +1,10 @@
-# Deblue v2 - Bluetooth Manager
+# DeSys - Linux System Settings Manager
 
-Deblue v2 is a unified Linux Bluetooth Manager built with **Flutter**, **GetX**, and **Rust** via **Flutter Rust Bridge (v2)**.
+DeSys is a unified Linux System Settings app built with **Flutter**, **GetX**, and **Rust** via **Flutter Rust Bridge (v2)**.
 
-In v2, the previous external Go REST/WebSocket backend from `debluev1` has been migrated into an embedded native Rust module communicating directly with Linux BlueZ via D-Bus (`zbus`).
+It started as Deblue (Bluetooth Manager, `debluev1` Go backend → v2 embedded Rust). It is now renamed to DeSys to cover all system settings modules: **Bluetooth, WiFi, Sound, ...**
+
+The Rust core talks directly to system daemons via D-Bus (`zbus`): BlueZ for Bluetooth, NetworkManager for WiFi.
 
 ---
 
@@ -10,12 +12,13 @@ In v2, the previous external Go REST/WebSocket backend from `debluev1` has been 
 
 ```
 +--------------------------------------------------------------+
-|                         Deblue v2                            |
+|                           DeSys                              |
 |                                                              |
 |  +---------------------------+  +--------------------------+ |
 |  |    Flutter UI (GetX)      |  |     Rust Core (zbus)     | |
 |  |                           |  |                          | |
-|  | - Home & Settings Views   |  | - BlueZ D-Bus Adapter    | |
+|  | - Sidebar modules         |  | - BlueZ D-Bus Adapter    | |
+|  |   (Bluetooth, WiFi, ...)  |  | - NetworkManager (WiFi)  | |
 |  | - Custom Window & Themes  |  | - Device Operations     | |
 |  | - GetX Controllers        |  | - D-Bus Signal Listener  | |
 |  +-------------+-------------+  +------------+-------------+ |
@@ -23,28 +26,23 @@ In v2, the previous external Go REST/WebSocket backend from `debluev1` has been 
 |                +<==== Flutter Rust Bridge ===>+              |
 |                     (In-Process FFI Stream)                  |
 +--------------------------------------------------------------+
-                               |
-                               v
-                       Linux BlueZ Daemon
+                                |
+                                v
+                  Linux Daemons (BlueZ, NetworkManager)
 ```
-
-### Improvements from v1
-- **Unified single project:** No need to build, bundle, or spawn a separate Go daemon process.
-- **Direct in-process FFI:** Eliminates localhost HTTP/WebSocket overhead and port conflicts (`8787`).
-- **Real-time Event Streaming:** BlueZ D-Bus property changes stream natively into Dart using FRB streams.
-- **Identical UI & State Management:** Preserves all themes, layout options (Grid, Tile, Compact), filters, and dialogs using GetX.
 
 ---
 
 ## Project Structure
 
-- `rust/`: Rust crate containing BlueZ integration using `zbus`.
+- `rust/`: Rust crate (`rust_lib_desys`) containing system integrations using `zbus`.
   - `src/api/bluetooth.rs`: Adapter discovery, device actions (connect, disconnect, pair, trust, remove), scan operations, and real-time event streaming.
-- `lib/`: Flutter frontend application.
+  - `src/api/wifi.rs` (planned): NetworkManager scan, connect, disconnect, saved networks, WiFi toggle, event streaming.
+- `lib/`: Flutter frontend application (`desys` package).
   - `app/data/services/bluetooth_service.dart`: Implements `BluetoothRepo` calling Rust bridge functions.
   - `app/data/services/bluetooth_event_service.dart`: Listens to the Rust event stream.
-  - `app/modules/home/`: Home controller and views.
-  - `app/widgets/`: Window shell, device cards, detail panels, and dialogs.
+  - `app/modules/home/`: Bluetooth module (to become one sidebar module among WiFi/Sound).
+  - `app/widgets/app_shell.dart`: Sidebar shell (`DeSys` brand).
   - `src/rust/`: Generated Dart bindings from `flutter_rust_bridge_codegen`.
 
 ---

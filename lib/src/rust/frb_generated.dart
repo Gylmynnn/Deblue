@@ -5,6 +5,7 @@
 
 import 'api/bluetooth.dart';
 import 'api/simple.dart';
+import 'api/wifi.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -70,11 +71,11 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 316512249;
+  int get rustContentHash => 105091633;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
-        stem: 'rust_lib_debluev2',
+        stem: 'rust_lib_desys',
         ioDirectory: 'rust/target/release/',
         webPrefix: 'pkg/',
         wasmBindgenName: 'wasm_bindgen',
@@ -84,11 +85,32 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 abstract class RustLibApi extends BaseApi {
   Future<void> crateApiBluetoothConnectDevice({required String path});
 
+  Future<void> crateApiWifiConnectNew({
+    required String ssid,
+    required String password,
+    required String device,
+  });
+
+  Future<void> crateApiWifiConnectSaved({
+    required String ssid,
+    required String device,
+  });
+
+  Future<void> crateApiWifiDisconnect({required String device});
+
   Future<void> crateApiBluetoothDisconnectDevice({required String path});
+
+  Future<int> crateApiWifiForget({required String ssid});
 
   Future<AdapterInfo> crateApiBluetoothGetAdapter();
 
   Future<List<BluetoothDevice>> crateApiBluetoothGetDevices();
+
+  Future<List<WifiDevice>> crateApiWifiGetDevices();
+
+  Future<List<WifiNetwork>> crateApiWifiGetNetworks({required String device});
+
+  Future<WifiStatus> crateApiWifiGetWifiStatus({required String device});
 
   String crateApiSimpleGreet({required String name});
 
@@ -98,6 +120,8 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiBluetoothRemoveDevice({required String path});
 
+  Future<void> crateApiWifiRequestScan();
+
   Future<void> crateApiBluetoothSetAdapterPower({required bool powered});
 
   Future<void> crateApiBluetoothSetDeviceTrusted({
@@ -105,11 +129,15 @@ abstract class RustLibApi extends BaseApi {
     required bool trusted,
   });
 
+  Future<void> crateApiWifiSetWifiEnabled({required bool enabled});
+
   Future<void> crateApiBluetoothStartScan();
 
   Future<void> crateApiBluetoothStopScan();
 
   Stream<BluetoothEvent> crateApiBluetoothSubscribeBluetoothEvents();
+
+  Stream<WifiEvent> crateApiWifiSubscribeWifiEvents();
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -149,6 +177,104 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "connect_device", argNames: ["path"]);
 
   @override
+  Future<void> crateApiWifiConnectNew({
+    required String ssid,
+    required String password,
+    required String device,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(ssid, serializer);
+          sse_encode_String(password, serializer);
+          sse_encode_String(device, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWifiConnectNewConstMeta,
+        argValues: [ssid, password, device],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWifiConnectNewConstMeta => const TaskConstMeta(
+    debugName: "connect_new",
+    argNames: ["ssid", "password", "device"],
+  );
+
+  @override
+  Future<void> crateApiWifiConnectSaved({
+    required String ssid,
+    required String device,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(ssid, serializer);
+          sse_encode_String(device, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWifiConnectSavedConstMeta,
+        argValues: [ssid, device],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWifiConnectSavedConstMeta => const TaskConstMeta(
+    debugName: "connect_saved",
+    argNames: ["ssid", "device"],
+  );
+
+  @override
+  Future<void> crateApiWifiDisconnect({required String device}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(device, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWifiDisconnectConstMeta,
+        argValues: [device],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWifiDisconnectConstMeta =>
+      const TaskConstMeta(debugName: "disconnect", argNames: ["device"]);
+
+  @override
   Future<void> crateApiBluetoothDisconnectDevice({required String path}) {
     return handler.executeNormal(
       NormalTask(
@@ -158,7 +284,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 5,
             port: port_,
           );
         },
@@ -177,6 +303,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "disconnect_device", argNames: ["path"]);
 
   @override
+  Future<int> crateApiWifiForget({required String ssid}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(ssid, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 6,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_u_32,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWifiForgetConstMeta,
+        argValues: [ssid],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWifiForgetConstMeta =>
+      const TaskConstMeta(debugName: "forget", argNames: ["ssid"]);
+
+  @override
   Future<AdapterInfo> crateApiBluetoothGetAdapter() {
     return handler.executeNormal(
       NormalTask(
@@ -185,7 +339,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 7,
             port: port_,
           );
         },
@@ -212,7 +366,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 8,
             port: port_,
           );
         },
@@ -231,13 +385,96 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "get_devices", argNames: []);
 
   @override
+  Future<List<WifiDevice>> crateApiWifiGetDevices() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 9,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_wifi_device,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWifiGetDevicesConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWifiGetDevicesConstMeta =>
+      const TaskConstMeta(debugName: "get_devices", argNames: []);
+
+  @override
+  Future<List<WifiNetwork>> crateApiWifiGetNetworks({required String device}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(device, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 10,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_wifi_network,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWifiGetNetworksConstMeta,
+        argValues: [device],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWifiGetNetworksConstMeta =>
+      const TaskConstMeta(debugName: "get_networks", argNames: ["device"]);
+
+  @override
+  Future<WifiStatus> crateApiWifiGetWifiStatus({required String device}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(device, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_wifi_status,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWifiGetWifiStatusConstMeta,
+        argValues: [device],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWifiGetWifiStatusConstMeta =>
+      const TaskConstMeta(debugName: "get_wifi_status", argNames: ["device"]);
+
+  @override
   String crateApiSimpleGreet({required String name}) {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -262,7 +499,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 6,
+            funcId: 13,
             port: port_,
           );
         },
@@ -290,7 +527,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 7,
+            funcId: 14,
             port: port_,
           );
         },
@@ -318,7 +555,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 8,
+            funcId: 15,
             port: port_,
           );
         },
@@ -337,6 +574,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "remove_device", argNames: ["path"]);
 
   @override
+  Future<void> crateApiWifiRequestScan() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 16,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWifiRequestScanConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWifiRequestScanConstMeta =>
+      const TaskConstMeta(debugName: "request_scan", argNames: []);
+
+  @override
   Future<void> crateApiBluetoothSetAdapterPower({required bool powered}) {
     return handler.executeNormal(
       NormalTask(
@@ -346,7 +610,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 9,
+            funcId: 17,
             port: port_,
           );
         },
@@ -381,7 +645,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 10,
+            funcId: 18,
             port: port_,
           );
         },
@@ -403,6 +667,34 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiWifiSetWifiEnabled({required bool enabled}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_bool(enabled, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 19,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiWifiSetWifiEnabledConstMeta,
+        argValues: [enabled],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiWifiSetWifiEnabledConstMeta =>
+      const TaskConstMeta(debugName: "set_wifi_enabled", argNames: ["enabled"]);
+
+  @override
   Future<void> crateApiBluetoothStartScan() {
     return handler.executeNormal(
       NormalTask(
@@ -411,7 +703,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 20,
             port: port_,
           );
         },
@@ -438,7 +730,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 21,
             port: port_,
           );
         },
@@ -468,7 +760,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 13,
+              funcId: 22,
               port: port_,
             );
           },
@@ -491,6 +783,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         argNames: ["sink"],
       );
 
+  @override
+  Stream<WifiEvent> crateApiWifiSubscribeWifiEvents() {
+    final sink = RustStreamSink<WifiEvent>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_StreamSink_wifi_event_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 23,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: sse_decode_String,
+          ),
+          constMeta: kCrateApiWifiSubscribeWifiEventsConstMeta,
+          argValues: [sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiWifiSubscribeWifiEventsConstMeta =>
+      const TaskConstMeta(
+        debugName: "subscribe_wifi_events",
+        argNames: ["sink"],
+      );
+
   @protected
   AnyhowException dco_decode_AnyhowException(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -501,6 +828,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustStreamSink<BluetoothEvent> dco_decode_StreamSink_bluetooth_event_Sse(
     dynamic raw,
   ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<WifiEvent> dco_decode_StreamSink_wifi_event_Sse(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     throw UnimplementedError();
   }
@@ -580,6 +913,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<WifiDevice> dco_decode_list_wifi_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_wifi_device).toList();
+  }
+
+  @protected
+  List<WifiNetwork> dco_decode_list_wifi_network(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_wifi_network).toList();
+  }
+
+  @protected
+  int dco_decode_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
   int dco_decode_u_8(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
@@ -592,6 +943,67 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  WifiDevice dco_decode_wifi_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return WifiDevice(
+      iface: dco_decode_String(arr[0]),
+      state: dco_decode_u_32(arr[1]),
+      connected: dco_decode_bool(arr[2]),
+      activeSsid: dco_decode_String(arr[3]),
+      driver: dco_decode_String(arr[4]),
+      hwAddress: dco_decode_String(arr[5]),
+      udi: dco_decode_String(arr[6]),
+    );
+  }
+
+  @protected
+  WifiEvent dco_decode_wifi_event(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return WifiEvent(
+      eventType: dco_decode_String(arr[0]),
+      path: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
+  WifiNetwork dco_decode_wifi_network(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return WifiNetwork(
+      ssid: dco_decode_String(arr[0]),
+      bssid: dco_decode_String(arr[1]),
+      signal: dco_decode_u_8(arr[2]),
+      frequency: dco_decode_u_32(arr[3]),
+      security: dco_decode_String(arr[4]),
+      inUse: dco_decode_bool(arr[5]),
+      saved: dco_decode_bool(arr[6]),
+    );
+  }
+
+  @protected
+  WifiStatus dco_decode_wifi_status(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 5)
+      throw Exception('unexpected arr length: expect 5 but see ${arr.length}');
+    return WifiStatus(
+      enabled: dco_decode_bool(arr[0]),
+      connected: dco_decode_bool(arr[1]),
+      activeSsid: dco_decode_String(arr[2]),
+      activeSignal: dco_decode_u_8(arr[3]),
+      device: dco_decode_String(arr[4]),
+    );
+  }
+
+  @protected
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_String(deserializer);
@@ -600,6 +1012,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   RustStreamSink<BluetoothEvent> sse_decode_StreamSink_bluetooth_event_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<WifiEvent> sse_decode_StreamSink_wifi_event_Sse(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -693,6 +1113,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<WifiDevice> sse_decode_list_wifi_device(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <WifiDevice>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_wifi_device(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<WifiNetwork> sse_decode_list_wifi_network(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <WifiNetwork>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_wifi_network(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint32();
+  }
+
+  @protected
   int sse_decode_u_8(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint8();
@@ -701,6 +1151,73 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   void sse_decode_unit(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
+  }
+
+  @protected
+  WifiDevice sse_decode_wifi_device(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_iface = sse_decode_String(deserializer);
+    var var_state = sse_decode_u_32(deserializer);
+    var var_connected = sse_decode_bool(deserializer);
+    var var_activeSsid = sse_decode_String(deserializer);
+    var var_driver = sse_decode_String(deserializer);
+    var var_hwAddress = sse_decode_String(deserializer);
+    var var_udi = sse_decode_String(deserializer);
+    return WifiDevice(
+      iface: var_iface,
+      state: var_state,
+      connected: var_connected,
+      activeSsid: var_activeSsid,
+      driver: var_driver,
+      hwAddress: var_hwAddress,
+      udi: var_udi,
+    );
+  }
+
+  @protected
+  WifiEvent sse_decode_wifi_event(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_eventType = sse_decode_String(deserializer);
+    var var_path = sse_decode_String(deserializer);
+    return WifiEvent(eventType: var_eventType, path: var_path);
+  }
+
+  @protected
+  WifiNetwork sse_decode_wifi_network(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_ssid = sse_decode_String(deserializer);
+    var var_bssid = sse_decode_String(deserializer);
+    var var_signal = sse_decode_u_8(deserializer);
+    var var_frequency = sse_decode_u_32(deserializer);
+    var var_security = sse_decode_String(deserializer);
+    var var_inUse = sse_decode_bool(deserializer);
+    var var_saved = sse_decode_bool(deserializer);
+    return WifiNetwork(
+      ssid: var_ssid,
+      bssid: var_bssid,
+      signal: var_signal,
+      frequency: var_frequency,
+      security: var_security,
+      inUse: var_inUse,
+      saved: var_saved,
+    );
+  }
+
+  @protected
+  WifiStatus sse_decode_wifi_status(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_enabled = sse_decode_bool(deserializer);
+    var var_connected = sse_decode_bool(deserializer);
+    var var_activeSsid = sse_decode_String(deserializer);
+    var var_activeSignal = sse_decode_u_8(deserializer);
+    var var_device = sse_decode_String(deserializer);
+    return WifiStatus(
+      enabled: var_enabled,
+      connected: var_connected,
+      activeSsid: var_activeSsid,
+      activeSignal: var_activeSignal,
+      device: var_device,
+    );
   }
 
   @protected
@@ -728,6 +1245,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       self.setupAndSerialize(
         codec: SseCodec(
           decodeSuccessData: sse_decode_bluetooth_event,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_StreamSink_wifi_event_Sse(
+    RustStreamSink<WifiEvent> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_wifi_event,
           decodeErrorData: sse_decode_AnyhowException,
         ),
       ),
@@ -811,6 +1345,36 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_wifi_device(
+    List<WifiDevice> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_wifi_device(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_wifi_network(
+    List<WifiNetwork> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_wifi_network(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint32(self);
+  }
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self);
@@ -819,6 +1383,47 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   void sse_encode_unit(void self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
+  }
+
+  @protected
+  void sse_encode_wifi_device(WifiDevice self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.iface, serializer);
+    sse_encode_u_32(self.state, serializer);
+    sse_encode_bool(self.connected, serializer);
+    sse_encode_String(self.activeSsid, serializer);
+    sse_encode_String(self.driver, serializer);
+    sse_encode_String(self.hwAddress, serializer);
+    sse_encode_String(self.udi, serializer);
+  }
+
+  @protected
+  void sse_encode_wifi_event(WifiEvent self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.eventType, serializer);
+    sse_encode_String(self.path, serializer);
+  }
+
+  @protected
+  void sse_encode_wifi_network(WifiNetwork self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.ssid, serializer);
+    sse_encode_String(self.bssid, serializer);
+    sse_encode_u_8(self.signal, serializer);
+    sse_encode_u_32(self.frequency, serializer);
+    sse_encode_String(self.security, serializer);
+    sse_encode_bool(self.inUse, serializer);
+    sse_encode_bool(self.saved, serializer);
+  }
+
+  @protected
+  void sse_encode_wifi_status(WifiStatus self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self.enabled, serializer);
+    sse_encode_bool(self.connected, serializer);
+    sse_encode_String(self.activeSsid, serializer);
+    sse_encode_u_8(self.activeSignal, serializer);
+    sse_encode_String(self.device, serializer);
   }
 
   @protected

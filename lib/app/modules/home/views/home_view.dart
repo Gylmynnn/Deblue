@@ -4,29 +4,17 @@ import 'package:get/get.dart';
 import '../../../constants/theme/app_color.dart';
 import '../../../controllers/app_controller.dart';
 import '../../../data/models/device_model.dart';
-import '../../../widgets/app_shell.dart';
 import '../../../widgets/device_detail_dialog.dart';
 import '../../../widgets/device_detail_panel.dart';
 import '../controllers/home_controller.dart';
 
-class HomeView extends GetView<AppController> {
-  const HomeView({super.key});
+class HomeContent extends GetView<AppController> {
+  const HomeContent({super.key});
 
   @override
   Widget build(BuildContext context) {
     final homeController = Get.find<HomeController>();
-    return AppShell(
-        title: 'Devices',
-        actions: [
-          IconButton(
-            onPressed: () {
-              homeController.refreshData();
-            },
-            icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh',
-          ),
-        ],
-        child: SafeArea(
+    return SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               final width = constraints.maxWidth;
@@ -108,8 +96,7 @@ class HomeView extends GetView<AppController> {
               );
             },
           ),
-        ),
-      );
+        );
   }
 }
 
