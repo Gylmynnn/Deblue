@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // ═══════════════════════════════════════════════════════════════
-  // DARK MODE - Backgrounds
+  // DARK MODE - Backgrounds (Obsidian settings style: flat, simple)
   // ═══════════════════════════════════════════════════════════════
-  static const darkBg = Color(0xFF141B1E);
-  static const darkSurface = Color(0xFF1E2528);
-  static const darkSurfaceAlt = Color(0xFF232A2D);
+  static const darkBg = Color(0xFF1E1E1E);
+  static const darkSurface = Color(0xFF262626);
+  static const darkSurfaceAlt = Color(0xFF2E2E2E);
 
   // ═══════════════════════════════════════════════════════════════
   // LIGHT MODE - Backgrounds (Modern Cool Tone)
@@ -16,10 +16,10 @@ class AppColors {
   static const lightSurfaceAlt = Color(0xFFF0F4F8);
 
   // ═══════════════════════════════════════════════════════════════
-  // DARK MODE - Text Colors
+  // DARK MODE - Text Colors (muted gray like reference)
   // ═══════════════════════════════════════════════════════════════
-  static const textDark = Color(0xFFDADADA);
-  static const textDarkSecondary = Color(0xFFA8A8A8);
+  static const textDark = Color(0xFFDCDCDC);
+  static const textDarkSecondary = Color(0xFFA3A3A3);
   static const textDarkTertiary = Color(0xFF7A7A7A);
 
   // ═══════════════════════════════════════════════════════════════
@@ -60,10 +60,10 @@ class AppColors {
   static const lightDisabled = Color(0xFFD1D5DB);
 
   // ═══════════════════════════════════════════════════════════════
-  // UI Elements - Dark Mode
+  // UI Elements - Dark Mode (subtle dividers, flat controls)
   // ═══════════════════════════════════════════════════════════════
-  static const darkDivider = Color(0xFF2A3033);
-  static const darkBorder = Color(0xFF323A40);
-  static const darkHoverBg = Color(0xFF272E32);
-  static const darkDisabled = Color(0xFF4A5560);
+  static const darkDivider = Color(0xFF333333);
+  static const darkBorder = Color(0xFF3A3A3A);
+  static const darkHoverBg = Color(0xFF2E2E2E);
+  static const darkDisabled = Color(0xFF4A4A4A);
 }

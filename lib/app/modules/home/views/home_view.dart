@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../constants/theme/app_color.dart';
 import '../../../controllers/app_controller.dart';
 import '../../../data/models/device_model.dart';
 import '../../../widgets/device_detail_dialog.dart';
 import '../../../widgets/device_detail_panel.dart';
+import '../../../widgets/settings_ui.dart';
 import '../controllers/home_controller.dart';
 
 class HomeContent extends GetView<AppController> {
@@ -13,90 +13,280 @@ class HomeContent extends GetView<AppController> {
 
   @override
   Widget build(BuildContext context) {
-    final homeController = Get.find<HomeController>();
-    return SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              final isCompact = width < 700;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Obx(() {
+          final selected =
+              Get.find<HomeController>().selectedDevice.value;
+          final showDetail =
+              selected != null && constraints.maxWidth >= 1100;
 
-              return Padding(
-                padding: EdgeInsets.fromLTRB(
-                  isCompact ? 14 : 24,
-                  isCompact ? 14 : 0,
-                  isCompact ? 14 : 24,
-                  isCompact ? 14 : 24,
+          if (!showDetail) {
+            return _SettingsScroll(child: _MainColumn());
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _SettingsScroll(child: _MainColumn())),
+              Container(
+                width: 1,
+                color: Theme.of(context)
+                    .dividerColor
+                    .withValues(alpha: 0.6),
+              ),
+              SizedBox(
+                width: 340,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: DeviceDetailPanel(device: selected),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ],
+          );
+        });
+      },
+    );
+  }
+}
+
+class _SettingsScroll extends StatelessWidget {
+  const _SettingsScroll({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 860),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _MainColumn extends GetView<AppController> {
+  @override
+  Widget build(BuildContext context) {
+    final home = Get.find<HomeController>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Obx(() {
+          final adapter = home.adapter.value;
+          final powered = adapter?.powered ?? false;
+          final discovering =
+              (adapter?.discovering ?? false) || home.scanning.value;
+          final scanning = home.scanning.value;
+
+          final statusText = !powered
+              ? 'Bluetooth adapter is disabled'
+              : discovering
+                  ? 'Scanning nearby devices...'
+                  : 'Adapter ready${adapter != null ? ' • ${adapter.alias}' : ''}';
+
+          return SettingsCard(
+            children: [
+              SettingsRow(
+                title: 'Bluetooth',
+                description: statusText,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _HeaderCard(isCompact: isCompact),
-                    const SizedBox(height: 14),
-                    _DeviceToolbar(isCompact: isCompact),
-                    const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Text(
-                          'Devices',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(width: 10),
-                        Obx(() {
-                          final total = homeController.filteredDevices.length;
-
-                          return _StatusChip(
-                            label: '$total found',
-                            active: total > 0,
-                          );
-                        }),
-                      ],
+                    SettingsButton(
+                      label: scanning ? 'Scanning' : 'Scan',
+                      onPressed: scanning || !powered ? null : home.scan,
+                      enabled: !scanning && powered,
                     ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      // Narrow scope: only the list/detail area rebuilds when
-                      // layoutMode or selectedDevice changes — header/toolbar
-                      // above stay intact.
-                      child: Obx(() {
-                        final layoutMode = controller.layoutMode.value;
-                        final selectedDevice =
-                            homeController.selectedDevice.value;
-
-                        final showDetailPanel =
-                            selectedDevice != null &&
-                            constraints.maxWidth >= 1100;
-
-                        if (!showDetailPanel) {
-                          return _PlaceholderDevices(
-                            layoutMode: layoutMode,
-                            isCompact: isCompact,
-                          );
-                        }
-
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _PlaceholderDevices(
-                                layoutMode: layoutMode,
-                                isCompact: isCompact,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            SizedBox(
-                              width: 360,
-                              child: DeviceDetailPanel(device: selectedDevice),
-                            ),
-                          ],
-                        );
-                      }),
+                    const SizedBox(width: 10),
+                    Switch(
+                      value: powered,
+                      materialTapTargetSize:
+                          MaterialTapTargetSize.shrinkWrap,
+                      onChanged: (_) => home.toggleBluetooth(),
                     ),
                   ],
                 ),
-              );
-            },
+              ),
+              SettingsRow(
+                title: 'Automatic discovery',
+                description:
+                    'Turn this off to prevent the app from checking for nearby devices.',
+                trailing: Switch(
+                  value: powered,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onChanged: (_) => home.toggleBluetooth(),
+                ),
+              ),
+              SettingsRow(
+                title: 'Show',
+                description: 'Change which devices are listed.',
+                trailing: Obx(() {
+                  return SettingsDropdown<DeviceFilterMode>(
+                    value: controller.filterMode.value,
+                    items: const [
+                      DropdownMenuItem(
+                        value: DeviceFilterMode.all,
+                        child: Text('All'),
+                      ),
+                      DropdownMenuItem(
+                        value: DeviceFilterMode.connected,
+                        child: Text('Connected'),
+                      ),
+                      DropdownMenuItem(
+                        value: DeviceFilterMode.paired,
+                        child: Text('Paired'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) controller.setFilterMode(v);
+                    },
+                  );
+                }),
+              ),
+            ],
+          );
+        }),
+        Obx(() {
+          final total = home.filteredDevices.length;
+          return SettingsSectionHeader(
+              'Devices${total > 0 ? ' • $total found' : ''}');
+        }),
+        _DeviceListCard(),
+      ],
+    );
+  }
+}
+
+class _DeviceListCard extends GetView<HomeController> {
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      if (controller.loading.value) {
+        return const SettingsCard(
+          children: [
+            Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          ],
+        );
+      }
+
+      final devices = controller.filteredDevices;
+      if (devices.isEmpty) {
+        return SettingsCard(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No devices found',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Try scanning again or make sure your device is discoverable.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  SettingsButton(
+                    label: 'Scan devices',
+                    onPressed: controller.scan,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      }
+
+      return SettingsCard(
+        children: [
+          for (var i = 0; i < devices.length; i++) ...[
+            _DeviceRow(device: devices[i]),
+            if (i != devices.length - 1)
+              Divider(
+                height: 1,
+                thickness: 1,
+                indent: 16,
+                endIndent: 16,
+                color: Theme.of(context)
+                    .dividerColor
+                    .withValues(alpha: 0.5),
+              ),
+          ],
+        ],
+      );
+    });
+  }
+}
+
+class _DeviceRow extends GetView<HomeController> {
+  const _DeviceRow({required this.device});
+  final DeviceModel device;
+
+  @override
+  Widget build(BuildContext context) {
+    final connected = device.connected;
+    final subtitle = connected
+        ? 'Connected • ${device.address}'
+        : device.paired
+            ? 'Paired • ${device.address}'
+            : device.address.isEmpty
+                ? 'Not paired'
+                : device.address;
+
+    return GetBuilder<HomeController>(
+      id: 'device_${device.path}',
+      builder: (c) {
+        final isLoading = c.isDeviceLoading(device.path);
+        final selected = c.selectedDevice.value?.path == device.path;
+        return SettingsListTile(
+          selected: selected,
+          title: device.nameOrUnknown,
+          subtitle: subtitle,
+          leading: Icon(
+            connected
+                ? Icons.bluetooth_connected_rounded
+                : Icons.bluetooth_rounded,
+            size: 20,
+            color: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.color
+                ?.withValues(alpha: 0.8),
+          ),
+          onTap: () => showDeviceDetail(context, device),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isLoading)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                SettingsButton(
+                  label: connected ? 'Disconnect' : 'Connect',
+                  onPressed: () => connected
+                      ? c.disconnect(device)
+                      : c.connect(device),
+                ),
+              _DeviceActionMenu(device: device),
+            ],
           ),
         );
+      },
+    );
   }
 }
 
@@ -108,104 +298,11 @@ bool isSelectedDevice(DeviceModel device) {
 void showDeviceDetail(BuildContext context, DeviceModel device) {
   final isDesktop = MediaQuery.sizeOf(context).width >= 1100;
   final homeC = Get.find<HomeController>();
-
   if (isDesktop) {
     homeC.selectDevice(device);
     return;
   }
-
   Get.dialog(DeviceDetailDialog(device: device));
-}
-
-class _DeviceToolbar extends GetView<AppController> {
-  const _DeviceToolbar({required this.isCompact});
-  final bool isCompact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(isCompact ? 12 : 16),
-        child: isCompact
-            ? Column(
-                children: [
-                  _SearchField(controller: controller),
-                  const SizedBox(height: 12),
-                  _FilterSelector(controller: controller),
-                ],
-              )
-            : Row(
-                children: [
-                  Expanded(child: _SearchField(controller: controller)),
-                  const SizedBox(width: 14),
-                  _FilterSelector(controller: controller),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller});
-
-  final AppController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      onChanged: controller.setSearchQuery,
-      decoration: InputDecoration(
-        hintText: 'Search device...',
-        prefixIcon: const Icon(Icons.search_rounded),
-        filled: true,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 12,
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterSelector extends StatelessWidget {
-  const _FilterSelector({required this.controller});
-
-  final AppController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      return SegmentedButton<DeviceFilterMode>(
-        showSelectedIcon: false,
-        selected: {controller.filterMode.value},
-        onSelectionChanged: (value) {
-          controller.setFilterMode(value.first);
-        },
-        segments: const [
-          ButtonSegment(
-            value: DeviceFilterMode.all,
-            icon: Icon(Icons.apps_rounded),
-            label: Text('All'),
-          ),
-          ButtonSegment(
-            value: DeviceFilterMode.connected,
-            icon: Icon(Icons.bluetooth_connected_rounded),
-            label: Text('Connected'),
-          ),
-          ButtonSegment(
-            value: DeviceFilterMode.paired,
-            icon: Icon(Icons.verified_rounded),
-            label: Text('Paired'),
-          ),
-        ],
-      );
-    });
-  }
 }
 
 class _DeviceActionMenu extends GetView<HomeController> {
@@ -216,6 +313,11 @@ class _DeviceActionMenu extends GetView<HomeController> {
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       tooltip: 'Device actions',
+      icon: Icon(
+        Icons.more_horiz_rounded,
+        size: 19,
+        color: Theme.of(context).textTheme.bodySmall?.color,
+      ),
       onSelected: (value) async {
         switch (value) {
           case 'pair':
@@ -234,35 +336,16 @@ class _DeviceActionMenu extends GetView<HomeController> {
           if (!device.paired)
             const PopupMenuItem(
               value: 'pair',
-              child: ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.key_rounded),
-                title: Text('Pair'),
-              ),
+              child: Text('Pair'),
             ),
           PopupMenuItem(
             value: 'trust',
-            child: ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                device.trusted
-                    ? Icons.verified_user_rounded
-                    : Icons.verified_user_outlined,
-              ),
-              title: Text(device.trusted ? 'Untrust' : 'Trust'),
-            ),
+            child: Text(device.trusted ? 'Untrust' : 'Trust'),
           ),
           const PopupMenuDivider(),
           const PopupMenuItem(
             value: 'remove',
-            child: ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.delete_outline_rounded, color: AppColors.red),
-              title: Text('Remove'),
-            ),
+            child: Text('Remove'),
           ),
         ];
       },
@@ -284,568 +367,6 @@ class _DeviceActionMenu extends GetView<HomeController> {
             child: const Text('Remove'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HeaderCard extends GetView<HomeController> {
-  const _HeaderCard({required this.isCompact});
-
-  final bool isCompact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      final adapter = controller.adapter.value;
-      final powered = adapter?.powered ?? false;
-      final discovering = adapter?.discovering ?? false;
-      final scanning = controller.scanning.value;
-
-      return Card(
-        child: Padding(
-          padding: EdgeInsets.all(isCompact ? 16 : 22),
-          child: isCompact
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _HeaderMainInfo(
-                      adapterName: adapter?.alias ?? 'Bluetooth Manager',
-                      powered: powered,
-                      discovering: discovering || scanning,
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).dividerColor.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              powered ? 'Bluetooth On' : 'Bluetooth Off',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          Switch(
-                            value: powered,
-                            onChanged: (_) {
-                              controller.toggleBluetooth();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        _StatusChip(
-                          label: powered ? 'Enabled' : 'Disabled',
-                          active: powered,
-                        ),
-                        FilledButton.icon(
-                          onPressed: scanning ? null : controller.scan,
-                          icon: scanning
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.search_rounded),
-                          label: Text(scanning ? 'Scanning' : 'Scan'),
-                        ),
-                      ],
-                    ),
-                  ],
-                )
-              : Row(
-                  children: [
-                    Expanded(
-                      child: _HeaderMainInfo(
-                        adapterName: adapter?.alias ?? 'Bluetooth Manager',
-                        powered: powered,
-                        discovering: discovering || scanning,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    FilledButton.icon(
-                      onPressed: scanning ? null : controller.scan,
-                      icon: scanning
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.search_rounded),
-                      label: Text(scanning ? 'Scanning' : 'Scan'),
-                    ),
-                    const SizedBox(width: 10),
-                    Switch(
-                      value: powered,
-                      onChanged: (_) {
-                        controller.toggleBluetooth();
-                      },
-                    ),
-                  ],
-                ),
-        ),
-      );
-    });
-  }
-}
-
-class _PlaceholderDevices extends GetView<HomeController> {
-  const _PlaceholderDevices({
-    required this.layoutMode,
-    required this.isCompact,
-  });
-
-  final DeviceLayoutMode layoutMode;
-  final bool isCompact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Obx(() {
-      if (controller.loading.value) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
-      final devices = controller.filteredDevices;
-
-      if (devices.isEmpty) {
-        return const _EmptyDevicesState();
-      }
-
-      if (layoutMode == DeviceLayoutMode.compact) {
-        return ListView.separated(
-          itemCount: devices.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 8),
-          addAutomaticKeepAlives: false,
-          itemBuilder: (context, index) {
-            return _DeviceCompactTile(
-              key: ValueKey(devices[index].path),
-              device: devices[index],
-            );
-          },
-        );
-      }
-
-      if (layoutMode == DeviceLayoutMode.tile || isCompact) {
-        return ListView.separated(
-          itemCount: devices.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          addAutomaticKeepAlives: false,
-          itemBuilder: (context, index) {
-            return _DeviceTile(
-              key: ValueKey(devices[index].path),
-              device: devices[index],
-            );
-          },
-        );
-      }
-
-      return GridView.builder(
-        itemCount: devices.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _getCrossAxisCount(MediaQuery.sizeOf(context).width),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          mainAxisExtent: 170,
-        ),
-        addAutomaticKeepAlives: false,
-        itemBuilder: (context, index) {
-          return _DeviceGridCard(
-            key: ValueKey(devices[index].path),
-            device: devices[index],
-          );
-        },
-      );
-    });
-  }
-
-  int _getCrossAxisCount(double width) {
-    if (width >= 1200) return 4;
-    if (width >= 900) return 3;
-    if (width >= 600) return 2;
-    return 1;
-  }
-}
-
-class _HeaderMainInfo extends StatelessWidget {
-  const _HeaderMainInfo({
-    required this.adapterName,
-    required this.powered,
-    required this.discovering,
-  });
-
-  final String adapterName;
-  final bool powered;
-  final bool discovering;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = powered ? AppColors.green : AppColors.red;
-
-    return Row(
-      children: [
-        Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Icon(
-            powered
-                ? Icons.bluetooth_connected_rounded
-                : Icons.bluetooth_disabled_rounded,
-            color: color,
-            size: 30,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Bluetooth Manager',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                adapterName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                powered
-                    ? discovering
-                        ? 'Scanning nearby devices...'
-                        : 'Adapter ready'
-                    : 'Bluetooth adapter is disabled',
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EmptyDevicesState extends StatelessWidget {
-  const _EmptyDevicesState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 360),
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppColors.blue.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: const Icon(
-                    Icons.bluetooth_searching_rounded,
-                    color: AppColors.blue,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'No devices found',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Try scanning again or make sure your Bluetooth device is discoverable.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: () {
-                    Get.find<HomeController>().scan();
-                  },
-                  icon: const Icon(Icons.search_rounded),
-                  label: const Text('Scan devices'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DeviceGridCard extends GetView<HomeController> {
-  const _DeviceGridCard({
-    super.key,
-    required this.device,
-  });
-
-  final DeviceModel device;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool connected = device.connected;
-
-    // Targeted rebuild: only this card refreshes when its own loading or
-    // selection state changes (see update(['device_<path>']) in
-    // HomeController). Previously an Obx on the shared RxSet rebuilt all N
-    // cards on every single device action.
-    return GetBuilder<HomeController>(
-      id: 'device_${device.path}',
-      builder: (c) {
-      final bool selected = c.selectedDevice.value?.path == device.path;
-      final bool isLoading = c.isDeviceLoading(device.path);
-      return Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: BorderSide(
-            color: selected
-                ? AppColors.green.withValues(alpha: 0.65)
-                : Theme.of(context).dividerColor.withValues(alpha: 0.3),
-            width: selected ? 1.4 : 1,
-          ),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: isLoading
-              ? null
-              : () {
-                  showDeviceDetail(context, device);
-                },
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      device.connected
-                          ? Icons.bluetooth_connected_rounded
-                          : Icons.devices_rounded,
-                      color: connected ? AppColors.green : AppColors.blue,
-                    ),
-                    const Spacer(),
-                    if (isLoading)
-                      const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      _DeviceActionMenu(device: device),
-                  ],
-                ),
-                const Spacer(),
-                Text(
-                  device.nameOrUnknown,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 6),
-                Text(connected ? 'Connected' : 'Disconnected'),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _StatusChip(
-                      label: device.paired ? 'Paired' : 'Unpaired',
-                      active: device.paired,
-                    ),
-                    _StatusChip(
-                      label: device.trusted ? 'Trusted' : 'Untrusted',
-                      active: device.trusted,
-                    ),
-                    _StatusChip(
-                      label: device.rssi == 0
-                          ? 'No RSSI'
-                          : 'RSSI ${device.rssi}',
-                      active: device.rssi != 0,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      },
-    );
-  }
-}
-
-class _DeviceTile extends GetView<HomeController> {
-  const _DeviceTile({
-    super.key,
-    required this.device,
-  });
-
-  final DeviceModel device;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool connected = device.connected;
-    return Card(
-      child: ListTile(
-        onTap: () {
-          showDeviceDetail(context, device);
-        },
-        leading: Icon(
-          connected ? Icons.bluetooth_connected_rounded : Icons.devices_rounded,
-          color: connected ? AppColors.green : AppColors.blue,
-        ),
-        title: Text(
-          device.nameOrUnknown,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          connected ? 'Connected' : device.address,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Obx(() {
-          final isLoading = controller.isDeviceLoading(device.path);
-
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              FilledButton(
-                onPressed: isLoading
-                    ? null
-                    : () {
-                        connected
-                            ? controller.disconnect(device)
-                            : controller.connect(device);
-                      },
-                child: isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(connected ? 'Disconnect' : 'Connect'),
-              ),
-              const SizedBox(width: 6),
-              _DeviceActionMenu(device: device),
-            ],
-          );
-        }),
-      ),
-    );
-  }
-}
-
-class _DeviceCompactTile extends GetView<HomeController> {
-  const _DeviceCompactTile({
-    super.key,
-    required this.device,
-  });
-
-  final DeviceModel device;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool connected = device.connected;
-    return Card(
-      child: ListTile(
-        dense: true,
-        onTap: () {
-          showDeviceDetail(context, device);
-        },
-        leading: Icon(
-          connected
-              ? Icons.bluetooth_connected_rounded
-              : Icons.bluetooth_rounded,
-          color: connected ? AppColors.green : AppColors.cyan,
-        ),
-        title: Text(
-          device.nameOrUnknown,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Obx(() {
-          final isLoading = controller.isDeviceLoading(device.path);
-          return IconButton(
-            onPressed: isLoading
-                ? null
-                : () {
-                    connected
-                        ? controller.disconnect(device)
-                        : controller.connect(device);
-                  },
-            icon: isLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(connected ? Icons.link_off_rounded : Icons.link_rounded),
-          );
-        }),
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label, required this.active});
-
-  final String label;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: (active ? AppColors.greenLight : AppColors.darkSurfaceAlt).withValues(
-          alpha: 0.18,
-        ),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }

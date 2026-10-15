@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../constants/theme/app_color.dart';
 import '../controllers/app_controller.dart';
 
+/// Obsidian-style shell:
+/// left = slim sidebar with search + grouped nav,
+/// right = simple content column with thin divider.
 class AppShell extends GetView<AppController> {
   const AppShell({
     super.key,
@@ -20,20 +22,27 @@ class AppShell extends GetView<AppController> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 900;
+        final isDesktop = constraints.maxWidth >= 800;
 
         if (!isDesktop) {
           return Scaffold(
             appBar: AppBar(
-              title: Text(title),
+              title: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               actions: [
                 ...actions,
                 IconButton(
                   icon: Obx(() {
                     return Icon(
                       controller.isDarkMode
-                          ? Icons.light_mode_rounded
-                          : Icons.dark_mode_rounded,
+                          ? Icons.light_mode_outlined
+                          : Icons.dark_mode_outlined,
+                      size: 20,
                     );
                   }),
                   onPressed: controller.toggleTheme,
@@ -41,31 +50,34 @@ class AppShell extends GetView<AppController> {
                 ),
               ],
             ),
-            drawer: const Drawer(child: SafeArea(child: _SidebarNav())),
-            body: Container(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              child: child,
-            ),
+            drawer: const Drawer(child: SafeArea(child: _SidebarBody())),
+            body: child,
           );
         }
 
+        final theme = Theme.of(context);
         return Scaffold(
-          body: Container(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            child: SafeArea(
-              child: Row(
-                children: [
-                  const _Sidebar(),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _DesktopTopBar(title: title, actions: actions),
-                        Expanded(child: child),
-                      ],
-                    ),
+          body: SafeArea(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(
+                  width: 250,
+                  child: _SidebarBody(),
+                ),
+                Container(
+                  width: 1,
+                  color: theme.dividerColor.withValues(alpha: 0.6),
+                ),
+                Expanded(
+                  child: Column(
+                    children: [
+                      _SlimTopBar(title: title, actions: actions),
+                      Expanded(child: child),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
@@ -74,8 +86,8 @@ class AppShell extends GetView<AppController> {
   }
 }
 
-class _DesktopTopBar extends StatelessWidget {
-  const _DesktopTopBar({required this.title, required this.actions});
+class _SlimTopBar extends StatelessWidget {
+  const _SlimTopBar({required this.title, required this.actions});
 
   final String title;
   final List<Widget> actions;
@@ -83,15 +95,16 @@ class _DesktopTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
           Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
           ),
           const Spacer(),
           ...actions,
@@ -101,91 +114,113 @@ class _DesktopTopBar extends StatelessWidget {
   }
 }
 
-class _Sidebar extends GetView<AppController> {
-  const _Sidebar();
+/// Shared body used in desktop sidebar and mobile drawer.
+class _SidebarBody extends GetView<AppController> {
+  const _SidebarBody();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 270,
-      margin: const EdgeInsets.all(14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.12),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _SidebarBrand(),
-          const SizedBox(height: 16),
-          const _SidebarNav(),
-          const Spacer(),
-          // Device layout (grid/tile/compact) applies to every module list.
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              color: Theme.of(
-                context,
-              ).scaffoldBackgroundColor.withValues(alpha: 0.65),
-            ),
-            child: Obx(() {
-              return _LayoutModeSelector(
-                value: controller.layoutMode.value,
-                onChanged: controller.setLayoutMode,
-              );
-            }),
-          ),
-          const SizedBox(height: 12),
-          Obx(() {
-            return _ThemeQuickToggle(
-              isDark: controller.isDarkMode,
-              onTap: controller.toggleTheme,
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-class _SidebarBrand extends StatelessWidget {
-  const _SidebarBrand();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
+    final theme = Theme.of(context);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       children: [
-        Container(
-          height: 48,
-          width: 48,
-          decoration: BoxDecoration(
-            color: AppColors.green.withValues(alpha: 0.16),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: const Icon(
-            Icons.bluetooth_audio_rounded,
-            color: AppColors.green,
+        // Search like "Search settings..." in the reference.
+        TextField(
+          onChanged: controller.setSearchQuery,
+          style: const TextStyle(fontSize: 14),
+          decoration: const InputDecoration(
+            hintText: 'Search settings...',
+            prefixIcon: Icon(Icons.search_rounded, size: 18),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 10,
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'DeSys',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-              ),
-              SizedBox(height: 2),
-              Text('System Settings', style: TextStyle(fontSize: 12)),
-            ],
+        const SizedBox(height: 16),
+        _GroupLabel('Options'),
+        const SizedBox(height: 4),
+        const _SidebarNav(),
+        const SizedBox(height: 16),
+        _GroupLabel('Appearance'),
+        const SizedBox(height: 4),
+        Obx(() {
+          final isDark = controller.isDarkMode;
+          return _NavItem(
+            icon: isDark
+                ? Icons.dark_mode_outlined
+                : Icons.light_mode_outlined,
+            label: isDark ? 'Dark mode' : 'Light mode',
+            selected: false,
+            trailingWidget: Switch(
+              value: isDark,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              onChanged: (_) => controller.toggleTheme(),
+            ),
+            onTap: controller.toggleTheme,
+          );
+        }),
+        const SizedBox(height: 2),
+        Obx(() {
+          final mode = controller.layoutMode.value;
+          return _NavItem(
+            icon: Icons.view_list_outlined,
+            label: 'List density',
+            selected: false,
+            trailingText: _layoutLabel(mode),
+            onTap: () => _cycleLayout(),
+          );
+        }),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text(
+            'DeSys • v1.0.0',
+            style: theme.textTheme.bodySmall,
           ),
         ),
       ],
+    );
+  }
+
+  String _layoutLabel(DeviceLayoutMode mode) {
+    switch (mode) {
+      case DeviceLayoutMode.grid:
+        return 'Comfort';
+      case DeviceLayoutMode.tile:
+        return 'Cozy';
+      case DeviceLayoutMode.compact:
+        return 'Compact';
+    }
+  }
+
+  void _cycleLayout() {
+    final current = controller.layoutMode.value;
+    final next = switch (current) {
+      DeviceLayoutMode.grid => DeviceLayoutMode.tile,
+      DeviceLayoutMode.tile => DeviceLayoutMode.compact,
+      DeviceLayoutMode.compact => DeviceLayoutMode.grid,
+    };
+    controller.setLayoutMode(next);
+  }
+}
+
+class _GroupLabel extends StatelessWidget {
+  const _GroupLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 12.5,
+            ),
+      ),
     );
   }
 }
@@ -198,8 +233,6 @@ class _SidebarNav extends GetView<AppController> {
     return Obx(() {
       final module = controller.selectedModule.value;
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
         children: [
           _NavItem(
             icon: Icons.bluetooth_rounded,
@@ -207,20 +240,18 @@ class _SidebarNav extends GetView<AppController> {
             selected: module == SystemModule.bluetooth,
             onTap: () => _goTo(SystemModule.bluetooth),
           ),
-          const SizedBox(height: 6),
           _NavItem(
             icon: Icons.wifi_rounded,
             label: 'WiFi',
             selected: module == SystemModule.wifi,
             onTap: () => _goTo(SystemModule.wifi),
           ),
-          const SizedBox(height: 6),
           const _NavItem(
-            icon: Icons.volume_up_rounded,
+            icon: Icons.volume_up_outlined,
             label: 'Sound',
             selected: false,
             enabled: false,
-            trailing: 'Soon',
+            trailingText: 'Soon',
           ),
         ],
       );
@@ -228,9 +259,7 @@ class _SidebarNav extends GetView<AppController> {
   }
 
   void _goTo(SystemModule module) {
-    // In-place tab switch: no route change, so nothing reloads.
     controller.setModule(module);
-    // Close the mobile drawer if it is open.
     final ctx = Get.context;
     if (ctx == null) return;
     final scaffold = Scaffold.maybeOf(ctx);
@@ -246,7 +275,8 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.selected,
     this.enabled = true,
-    this.trailing,
+    this.trailingText,
+    this.trailingWidget,
     this.onTap,
   });
 
@@ -254,143 +284,57 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool selected;
   final bool enabled;
-  final String? trailing;
+  final String? trailingText;
+  final Widget? trailingWidget;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final background = selected
-        ? colorScheme.primary.withValues(alpha: 0.14)
-        : Colors.transparent;
-    final foreground = selected
-        ? colorScheme.primary
-        : Theme.of(context).textTheme.bodyLarge?.color;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final selectedBg =
+        isDark ? const Color(0xFF333333) : const Color(0xFFE8EAED);
 
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Icon(icon, color: foreground),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    color: foreground,
-                  ),
-                ),
-              ),
-              if (trailing != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).scaffoldBackgroundColor.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+    final fg = enabled
+        ? theme.textTheme.bodyLarge?.color
+        : theme.textTheme.bodySmall?.color;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Material(
+        color: selected ? selectedBg : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: enabled ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: fg),
+                const SizedBox(width: 10),
+                Expanded(
                   child: Text(
-                    trailing!,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight:
+                          selected ? FontWeight.w600 : FontWeight.w400,
+                      color: fg,
                     ),
                   ),
                 ),
-            ],
+                if (trailingWidget != null) trailingWidget!
+                else if (trailingText != null)
+                  Text(
+                    trailingText!,
+                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 11.5),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ThemeQuickToggle extends StatelessWidget {
-  const _ThemeQuickToggle({required this.isDark, required this.onTap});
-
-  final bool isDark;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.65),
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Icon(
-                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                color: isDark ? AppColors.purple : AppColors.yellow,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  isDark ? 'Dark mode' : 'Light mode',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LayoutModeSelector extends StatelessWidget {
-  const _LayoutModeSelector({required this.value, required this.onChanged});
-
-  final DeviceLayoutMode value;
-  final ValueChanged<DeviceLayoutMode> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SegmentedButton<DeviceLayoutMode>(
-      style: const ButtonStyle(
-        padding: WidgetStatePropertyAll(EdgeInsets.symmetric(vertical: 16)),
-        iconSize: WidgetStatePropertyAll(32),
-      ),
-      expandedInsets: const EdgeInsets.all(12),
-      showSelectedIcon: false,
-      multiSelectionEnabled: false,
-      emptySelectionAllowed: false,
-      segments: const [
-        ButtonSegment(
-          value: DeviceLayoutMode.grid,
-          icon: Icon(Icons.grid_view_rounded),
-          tooltip: 'Grid',
-        ),
-        ButtonSegment(
-          value: DeviceLayoutMode.tile,
-          icon: Icon(Icons.view_agenda_rounded),
-          tooltip: 'Tile',
-        ),
-        ButtonSegment(
-          value: DeviceLayoutMode.compact,
-          icon: Icon(Icons.view_headline_rounded),
-          tooltip: 'Compact',
-        ),
-      ],
-      selected: {value},
-      onSelectionChanged: (values) {
-        onChanged(values.first);
-      },
     );
   }
 }

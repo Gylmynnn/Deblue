@@ -26,7 +26,7 @@ class ShellView extends GetView<AppController> {
       final isWifi = module == SystemModule.wifi;
 
       return AppShell(
-        title: isWifi ? 'WiFi' : 'Devices',
+        title: isWifi ? 'WiFi' : 'Bluetooth',
         actions: [
           IconButton(
             onPressed: () {
@@ -36,7 +36,7 @@ class ShellView extends GetView<AppController> {
                 homeController.refreshData();
               }
             },
-            icon: const Icon(Icons.refresh_rounded),
+            icon: const Icon(Icons.refresh_rounded, size: 19),
             tooltip: 'Refresh',
           ),
         ],
