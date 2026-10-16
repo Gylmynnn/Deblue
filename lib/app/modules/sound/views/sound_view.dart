@@ -223,42 +223,12 @@ class _DeviceBlock extends GetView<SoundController> {
             ],
           ),
           const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: Obx(() {
-                  final value =
-                      controller.volumeFor(draftKey, device.volumePercent);
-                  return Slider(
-                    value: value.clamp(0, 150).toDouble(),
-                    min: 0,
-                    max: 150,
-                    divisions: 150,
-                    label: '${value.round()}%',
-                    onChanged: (v) =>
-                        controller.previewVolume(draftKey, v),
-                    onChangeEnd: (v) => controller.commitDeviceVolume(
-                        device, isSource, v),
-                  );
-                }),
-              ),
-              const SizedBox(width: 8),
-              Obx(() {
-                final value =
-                    controller.volumeFor(draftKey, device.volumePercent);
-                return SizedBox(
-                  width: 44,
-                  child: Text(
-                    '${value.round()}%',
-                    textAlign: TextAlign.right,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                );
-              }),
-            ],
+          _VolumeSlider(
+            key: ValueKey(draftKey),
+            initial: device.volumePercent.toDouble(),
+            draftKey: draftKey,
+            onCommit: (v) =>
+                controller.commitDeviceVolume(device, isSource, v),
           ),
           if (device.hasPortChoice)
             Padding(
@@ -454,42 +424,12 @@ class _StreamBlock extends GetView<SoundController> {
             ],
           ),
           const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: Obx(() {
-                  final value =
-                      controller.volumeFor(draftKey, stream.volumePercent);
-                  return Slider(
-                    value: value.clamp(0, 150).toDouble(),
-                    min: 0,
-                    max: 150,
-                    divisions: 150,
-                    label: '${value.round()}%',
-                    onChanged: (v) =>
-                        controller.previewVolume(draftKey, v),
-                    onChangeEnd: (v) => controller.commitStreamVolume(
-                        stream, isPlayback, v),
-                  );
-                }),
-              ),
-              const SizedBox(width: 8),
-              Obx(() {
-                final value =
-                    controller.volumeFor(draftKey, stream.volumePercent);
-                return SizedBox(
-                  width: 44,
-                  child: Text(
-                    '${value.round()}%',
-                    textAlign: TextAlign.right,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                );
-              }),
-            ],
+          _VolumeSlider(
+            key: ValueKey(draftKey),
+            initial: stream.volumePercent.toDouble(),
+            draftKey: draftKey,
+            onCommit: (v) =>
+                controller.commitStreamVolume(stream, isPlayback, v),
           ),
         ],
       ),
@@ -527,5 +467,97 @@ class _MoveDropdown extends GetView<SoundController> {
         },
       );
     });
+  }
+}
+
+/// Smooth volume slider.
+///
+/// Why this fixes "patah-patah" saat drag:
+/// - State drag disimpan lokal via setState (60fps), bukan via Obx/RxMap
+///   yang me-rebuild Slider + seluruh list setiap pixel.
+/// - Tanpa `divisions` agar thumb bergerak kontinu; rounding hanya untuk
+///   label dan commit ke backend.
+/// - Controller diberi tahu drag mulai/selesai (beginDrag/endDrag) sehingga
+///   event refresh dari `pactl subscribe` ditunda sampai jari dilepas —
+///   tidak ada snap-back di tengah gesture.
+/// - Nilai optimistik (_local) dipertahankan setelah lepas sampai server
+///   mengonfirmasi via refresh, jadi tidak ada flicker.
+class _VolumeSlider extends StatefulWidget {
+  const _VolumeSlider({
+    super.key,
+    required this.initial,
+    required this.draftKey,
+    required this.onCommit,
+  });
+
+  final double initial;
+  final String draftKey;
+  final ValueChanged<double> onCommit;
+
+  @override
+  State<_VolumeSlider> createState() => _VolumeSliderState();
+}
+
+class _VolumeSliderState extends State<_VolumeSlider> {
+  SoundController get _c => Get.find<SoundController>();
+
+  /// Null = ikut nilai server; non-null = posisi drag/optimistik lokal.
+  double? _local;
+
+  double get _shown => _local ?? widget.initial;
+
+  @override
+  void didUpdateWidget(covariant _VolumeSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Saat masih drag, jangan ganggu posisi jari.
+    if (_c.isDragging(widget.draftKey)) return;
+    if (_local != null && widget.initial != oldWidget.initial) {
+      // Server sudah update (hasil commit kita / perubahan eksternal).
+      _local = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final shown = _shown.clamp(0, 150).toDouble();
+    return Row(
+      children: [
+        Expanded(
+          child: Slider(
+            value: shown,
+            min: 0,
+            max: 150,
+            label: '${shown.round()}%',
+            onChangeStart: (v) {
+              setState(() => _local = v);
+              _c.beginDrag(widget.draftKey, v);
+            },
+            onChanged: (v) {
+              setState(() => _local = v);
+              _c.previewVolume(widget.draftKey, v);
+            },
+            onChangeEnd: (v) {
+              // Pertahankan nilai optimistik sampai refresh konfirmasi.
+              setState(() => _local = v);
+              _c.endDrag(widget.draftKey);
+              widget.onCommit(v);
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 44,
+          child: Text(
+            '${shown.round()}%',
+            textAlign: TextAlign.right,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

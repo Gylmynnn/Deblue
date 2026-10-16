@@ -14,6 +14,7 @@ class SoundController extends GetxController {
   Timer? _refreshDebounce;
   bool _refreshing = false;
   bool _refreshQueued = false;
+  bool _pendingEventRefresh = false;
 
   final RxBool loading = false.obs;
   final RxList<SoundDeviceModel> sinks = <SoundDeviceModel>[].obs;
@@ -26,6 +27,10 @@ class SoundController extends GetxController {
   /// In-progress slider positions (no backend round-trip until release).
   final RxMap<String, double> drafts = <String, double>{}.obs;
   final RxSet<String> busyIds = <String>{}.obs;
+
+  /// Keys currently being dragged. While non-empty, event-driven refreshes
+  /// are deferred so the thumb never snaps back mid-drag (patah-patah).
+  final Set<String> _dragging = {};
 
   /// Non-monitor inputs — monitors clutter the mixer, real mics first.
   List<SoundDeviceModel> get inputs =>
@@ -53,7 +58,29 @@ class SoundController extends GetxController {
   double volumeFor(String key, int actual) =>
       drafts[key] ?? actual.toDouble();
 
+  bool isDragging(String key) => _dragging.contains(key);
+
+  /// Called from Slider.onChangeStart — freezes event refresh + seeds draft.
+  void beginDrag(String key, double value) {
+    _dragging.add(key);
+    drafts[key] = value;
+    // Cancel any pending event refresh; it will be re-scheduled on endDrag.
+    _refreshDebounce?.cancel();
+  }
+
+  /// Called on every Slider.onChanged — local-only, no backend call,
+  /// so dragging stays at 60fps without rebuilding the whole list.
   void previewVolume(String key, double value) => drafts[key] = value;
+
+  /// Called from Slider.onChangeEnd (before commit).
+  void endDrag(String key) {
+    _dragging.remove(key);
+    if (_dragging.isEmpty && _pendingEventRefresh) {
+      _pendingEventRefresh = false;
+      drafts.removeWhere((k, _) => !_dragging.contains(k));
+      refreshData(silent: true);
+    }
+  }
 
   void clearDraft(String key) => drafts.remove(key);
 
@@ -86,6 +113,12 @@ class SoundController extends GetxController {
       _refreshDebounce?.cancel();
       // pactl subscribe bursts on volume drags; coalesce into one refresh.
       _refreshDebounce = Timer(const Duration(milliseconds: 600), () {
+        if (_dragging.isNotEmpty) {
+          // User is still dragging — defer until the drag ends
+          // instead of clearing drafts mid-gesture (caused stutter).
+          _pendingEventRefresh = true;
+          return;
+        }
         // Drop slider drafts touched by our own writes — server state wins.
         drafts.clear();
         refreshData(silent: true);
@@ -127,35 +160,30 @@ class SoundController extends GetxController {
     double value,
   ) async {
     final pct = value.round().clamp(0, 150);
-    clearDraft(_deviceKey(dev, isSource));
-    await _run('vol:${dev.name}', () {
+    final key = _deviceKey(dev, isSource);
+    _dragging.remove(key);
+    // Optimistic: keep showing the released value through the refresh
+    // so the slider never flickers back to the stale server value.
+    drafts[key] = pct.toDouble();
+    try {
+      _setBusy('vol:${dev.name}', true);
       if (isSource) {
-        return _service.setSourceVolume(dev.name, pct);
+        await _service.setSourceVolume(dev.name, pct);
+      } else {
+        await _service.setSinkVolume(dev.name, pct);
       }
-      return _service.setSinkVolume(dev.name, pct);
-    });
-  }
-
-  Future<void> toggleDeviceMute(SoushQueued) {
-        _refreshQueued = false;
-        refreshData(silent: silent);
+      await refreshData(silent: true);
+    } catch (e) {
+      Get.snackbar('Sound Error', e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      _setBusy('vol:${dev.name}', false);
+      drafts.remove(key);
+      if (_dragging.isEmpty && _pendingEventRefresh) {
+        _pendingEventRefresh = false;
+        refreshData(silent: true);
       }
     }
-  }
-
-  Future<void> commitDeviceVolume(
-    SoundDeviceModel dev,
-    bool isSource,
-    double value,
-  ) async {
-    final pct = value.round().clamp(0, 150);
-    clearDraft(_deviceKey(dev, isSource));
-    await _run('vol:${dev.name}', () {
-      if (isSource) {
-        return _service.setSourceVolume(dev.name, pct);
-      }
-      return _service.setSinkVolume(dev.name, pct);
-    });
   }
 
   Future<void> toggleDeviceMute(SoundDeviceModel dev, bool isSource) async {
@@ -188,10 +216,24 @@ class SoundController extends GetxController {
     double value,
   ) async {
     final pct = value.round().clamp(0, 150);
-    clearDraft(_streamKey(s, isPlayback));
-    await _run('svol:${s.index}', () {
-      return _service.setStreamVolume(s.index, isPlayback, pct);
-    });
+    final key = _streamKey(s, isPlayback);
+    _dragging.remove(key);
+    drafts[key] = pct.toDouble();
+    try {
+      _setBusy('svol:${s.index}', true);
+      await _service.setStreamVolume(s.index, isPlayback, pct);
+      await refreshData(silent: true);
+    } catch (e) {
+      Get.snackbar('Sound Error', e.toString(),
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      _setBusy('svol:${s.index}', false);
+      drafts.remove(key);
+      if (_dragging.isEmpty && _pendingEventRefresh) {
+        _pendingEventRefresh = false;
+        refreshData(silent: true);
+      }
+    }
   }
 
   Future<void> toggleStreamMute(SoundStreamModel s, bool isPlayback) async {
