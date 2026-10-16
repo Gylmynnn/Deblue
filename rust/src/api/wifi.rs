@@ -1,14 +1,14 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
-use std::time::{Duration, Instant};
-use zbus::MatchRule;
-use zbus::blocking::Connection;
-use zbus::blocking::MessageIterator;
 use zbus::blocking::fdo::DBusProxy;
+use zbus::blocking::MessageIterator;
 use zbus::zvariant::{ObjectPath, OwnedObjectPath, OwnedValue, Value};
+
+use crate::common::bus::{self, get_all_props, with_connection};
+use crate::common::error::ApiResult;
+use crate::common::events::{self, ThrottleMap, PROPS_THROTTLE};
+use crate::common::props;
 use crate::frb_generated::StreamSink;
 
 const NM_SERVICE: &str = "org.freedesktop.NetworkManager";
@@ -27,7 +27,8 @@ const IFACE_OBJ_MGR: &str = "org.freedesktop.DBus.ObjectManager";
 
 const DEVICE_TYPE_WIFI: u32 = 2;
 const DEVICE_STATE_ACTIVATED: u32 = 100;
-const NULL_PATH: &str = "/";
+
+use props::NULL_PATH;
 
 #[derive(Debug, Clone)]
 pub struct WifiStatus {
@@ -66,123 +67,13 @@ pub struct WifiEvent {
     pub path: String,
 }
 
-/// Throttle window for PropertiesChanged bursts (signal strength churn).
-const PROPS_THROTTLE: Duration = Duration::from_millis(800);
-
-/// Guard so repeated Dart `connect()` calls don't spawn duplicate listener threads.
+/// Guard so repeated Dart `connect()` calls don't spawn duplicate threads.
 static SUBSCRIBED: AtomicBool = AtomicBool::new(false);
 
 type PropsMap = HashMap<String, OwnedValue>;
 
-// Thread-local reuse of the system-bus connection (separate from bluetooth's
-// so the two modules never share a TLS borrow).
-thread_local! {
-    static TLS_WIFI_CONN: RefCell<Option<Connection>> = const { RefCell::new(None) };
-}
-
-fn get_system_connection() -> Result<Connection, String> {
-    Connection::system().map_err(|e| format!("Failed to connect to system bus: {e}"))
-}
-
-fn with_nm_connection<T>(f: impl Fn(&Connection) -> Result<T, String>) -> Result<T, String> {
-    TLS_WIFI_CONN
-        .try_with(|cell| {
-            {
-                let slot = cell.borrow();
-                if let Some(conn) = slot.as_ref() {
-                    match f(conn) {
-                        Ok(v) => return Ok(v),
-                        Err(e) if is_transport_error(&e) => { /* fall through to reconnect */ }
-                        Err(e) => return Err(e),
-                    }
-                }
-            }
-            let fresh = get_system_connection()?;
-            let result = f(&fresh);
-            *cell.borrow_mut() = Some(fresh);
-            result
-        })
-        .map_err(|_| "Thread-local storage inaccessible".to_string())?
-}
-
-fn is_transport_error(msg: &str) -> bool {
-    msg.contains("connection closed")
-        || msg.contains("disconnected")
-        || msg.contains("I/O error")
-        || msg.contains("Broken pipe")
-}
-
-fn get_bool(props: &HashMap<String, OwnedValue>, key: &str) -> bool {
-    props
-        .get(key)
-        .and_then(|v| match v.deref() {
-            Value::Bool(b) => Some(*b),
-            _ => None,
-        })
-        .unwrap_or(false)
-}
-
-fn get_string(props: &HashMap<String, OwnedValue>, key: &str) -> String {
-    props
-        .get(key)
-        .and_then(|v| match v.deref() {
-            Value::Str(s) => Some(s.as_str().to_string()),
-            _ => None,
-        })
-        .unwrap_or_default()
-}
-
-fn get_u8(props: &HashMap<String, OwnedValue>, key: &str) -> u8 {
-    props
-        .get(key)
-        .and_then(|v| match v.deref() {
-            Value::U8(i) => Some(*i),
-            _ => None,
-        })
-        .unwrap_or(0)
-}
-
-fn get_u32(props: &HashMap<String, OwnedValue>, key: &str) -> u32 {
-    props
-        .get(key)
-        .and_then(|v| match v.deref() {
-            Value::U32(i) => Some(*i),
-            Value::U16(i) => Some(*i as u32),
-            Value::U8(i) => Some(*i as u32),
-            _ => None,
-        })
-        .unwrap_or(0)
-}
-
-fn get_obj_path(props: &HashMap<String, OwnedValue>, key: &str) -> String {
-    props
-        .get(key)
-        .and_then(|v| match v.deref() {
-            Value::ObjectPath(p) => Some(p.as_str().to_string()),
-            _ => None,
-        })
-        .unwrap_or_else(|| NULL_PATH.to_string())
-}
-
-/// AP `Ssid` is `ay` (array of bytes). Returns raw bytes + lossy string.
-fn get_ssid_bytes(props: &HashMap<String, OwnedValue>, key: &str) -> Vec<u8> {
-    let Some(v) = props.get(key) else {
-        return Vec::new();
-    };
-    match v.deref() {
-        Value::Array(arr) => arr
-            .iter()
-            .filter_map(|e| match e {
-                Value::U8(b) => Some(*b),
-                _ => None,
-            })
-            .collect(),
-        _ => Vec::new(),
-    }
-}
-
-fn ssid_to_string(bytes: &[u8]) -> String {
-    String::from_utf8_lossy(bytes).trim().to_string()
+fn iface_props(conn: &zbus::blocking::Connection, path: &str, iface: &str) -> ApiResult<PropsMap> {
+    get_all_props(conn, NM_SERVICE, path, iface)
 }
 
 fn ap_security(flags: u32, wpa_flags: u32, rsn_flags: u32) -> String {
@@ -199,44 +90,18 @@ fn ap_security(flags: u32, wpa_flags: u32, rsn_flags: u32) -> String {
     }
 }
 
-fn get_managed_device_paths(conn: &Connection) -> Result<Vec<String>, String> {
+fn get_managed_device_paths(conn: &zbus::blocking::Connection) -> ApiResult<Vec<String>> {
     // NOTE: unlike BlueZ, NetworkManager does not implement
     // org.freedesktop.DBus.ObjectManager, so devices / APs / profiles are
     // enumerated through explicit list methods instead of GetManagedObjects.
     let reply = conn
-        .call_method(
-            Some(NM_SERVICE),
-            NM_PATH,
-            Some(IFACE_NM),
-            "GetDevices",
-            &(),
-        )
+        .call_method(Some(NM_SERVICE), NM_PATH, Some(IFACE_NM), "GetDevices", &())
         .map_err(|e| format!("Failed to list NetworkManager devices: {e}"))?;
     let paths: Vec<OwnedObjectPath> = reply
         .body()
         .deserialize()
         .map_err(|e| format!("Failed to deserialize device list: {e}"))?;
     Ok(paths.into_iter().map(|p| p.to_string()).collect())
-}
-
-fn get_all_props(
-    conn: &Connection,
-    path: &str,
-    iface: &str,
-) -> Result<HashMap<String, OwnedValue>, String> {
-    let reply = conn
-        .call_method(
-            Some(NM_SERVICE),
-            path,
-            Some(IFACE_PROPS),
-            "GetAll",
-            &(iface,),
-        )
-        .map_err(|e| format!("Failed to get properties for {path}: {e}"))?;
-    reply
-        .body()
-        .deserialize()
-        .map_err(|e| format!("Failed to deserialize properties for {path}: {e}"))
 }
 
 struct WifiDeviceInfo {
@@ -250,28 +115,28 @@ struct WifiDeviceInfo {
     udi: String,
 }
 
-fn collect_wifi_devices(conn: &Connection) -> Result<Vec<WifiDeviceInfo>, String> {
+fn collect_wifi_devices(conn: &zbus::blocking::Connection) -> ApiResult<Vec<WifiDeviceInfo>> {
     let mut devices = Vec::new();
     for path in get_managed_device_paths(conn)? {
-        let dev = get_all_props(conn, &path, IFACE_DEVICE)?;
-        if get_u32(&dev, "DeviceType") != DEVICE_TYPE_WIFI {
+        let dev = iface_props(conn, &path, IFACE_DEVICE)?;
+        if props::get_u32(&dev, "DeviceType") != DEVICE_TYPE_WIFI {
             continue;
         }
         // Non-wireless-capable entries (e.g. p2p) are already filtered by
         // DeviceType, but ActiveAccessPoint only exists on the wireless
         // interface — a failed GetAll just means "skip".
-        let Ok(wifi) = get_all_props(conn, &path, IFACE_WIFI_DEVICE) else {
+        let Ok(wifi) = iface_props(conn, &path, IFACE_WIFI_DEVICE) else {
             continue;
         };
         devices.push(WifiDeviceInfo {
             path,
-            iface: get_string(&dev, "Interface"),
-            state: get_u32(&dev, "State"),
-            active_ap: get_obj_path(&wifi, "ActiveAccessPoint"),
-            active_connection: get_obj_path(&dev, "ActiveConnection"),
-            driver: get_string(&dev, "Driver"),
-            hw_address: get_string(&dev, "HwAddress"),
-            udi: get_string(&dev, "Udi"),
+            iface: props::get_string(&dev, "Interface"),
+            state: props::get_u32(&dev, "State"),
+            active_ap: props::get_obj_path(&wifi, "ActiveAccessPoint"),
+            active_connection: props::get_obj_path(&dev, "ActiveConnection"),
+            driver: props::get_string(&dev, "Driver"),
+            hw_address: props::get_string(&dev, "HwAddress"),
+            udi: props::get_string(&dev, "Udi"),
         });
     }
     // Stable order for deterministic UI.
@@ -305,12 +170,12 @@ fn resolve_device<'a>(
 }
 
 /// Map of saved connections: ssid bytes -> settings object path.
-fn saved_connections(conn: &Connection) -> HashMap<Vec<u8>, String> {
+fn saved_connections(conn: &zbus::blocking::Connection) -> HashMap<Vec<u8>, String> {
     let mut saved = HashMap::new();
     for path_str in settings_paths(conn) {
         if let Some(settings) = read_settings(conn, &path_str) {
             if let Some(wireless) = settings.get("802-11-wireless") {
-                let ssid = get_ssid_bytes(wireless, "ssid");
+                let ssid = props::get_bytes(wireless, "ssid");
                 if !ssid.is_empty() {
                     saved.entry(ssid).or_insert(path_str);
                 }
@@ -320,7 +185,7 @@ fn saved_connections(conn: &Connection) -> HashMap<Vec<u8>, String> {
     saved
 }
 
-fn settings_paths(conn: &Connection) -> Vec<String> {
+fn settings_paths(conn: &zbus::blocking::Connection) -> Vec<String> {
     let Ok(reply) = conn.call_method(
         Some(NM_SERVICE),
         NM_SETTINGS_PATH,
@@ -337,7 +202,7 @@ fn settings_paths(conn: &Connection) -> Vec<String> {
 }
 
 fn read_settings(
-    conn: &Connection,
+    conn: &zbus::blocking::Connection,
     settings_path: &str,
 ) -> Option<HashMap<String, HashMap<String, OwnedValue>>> {
     let reply = conn
@@ -354,7 +219,7 @@ fn read_settings(
 
 /// All saved profiles for an SSID: (settings path, interface-name lock).
 /// The lock is "" for portable profiles usable on any adapter.
-fn profiles_for_ssid(conn: &Connection, ssid: &str) -> Vec<(String, String)> {
+fn profiles_for_ssid(conn: &zbus::blocking::Connection, ssid: &str) -> Vec<(String, String)> {
     let mut out = Vec::new();
     for path_str in settings_paths(conn) {
         let Some(settings) = read_settings(conn, &path_str) else {
@@ -362,14 +227,14 @@ fn profiles_for_ssid(conn: &Connection, ssid: &str) -> Vec<(String, String)> {
         };
         let matches = settings
             .get("802-11-wireless")
-            .map(|w| ssid_to_string(&get_ssid_bytes(w, "ssid")) == ssid)
+            .map(|w| props::bytes_to_string(&props::get_bytes(w, "ssid")) == ssid)
             .unwrap_or(false);
         if !matches {
             continue;
         }
         let locked = settings
             .get("connection")
-            .map(|c| get_string(c, "interface-name"))
+            .map(|c| props::get_string(c, "interface-name"))
             .unwrap_or_default();
         out.push((path_str, locked));
     }
@@ -392,7 +257,7 @@ fn bound_error(ssid: &str, profiles: &[(String, String)]) -> String {
 
 /// All visible access points across wifi devices: (object path, AP props).
 fn collect_access_points(
-    conn: &Connection,
+    conn: &zbus::blocking::Connection,
     devices: &[WifiDeviceInfo],
 ) -> Vec<(String, PropsMap)> {
     let mut aps = Vec::new();
@@ -406,29 +271,58 @@ fn collect_access_points(
         ) else {
             continue;
         };
-        let Ok(paths): Result<Vec<OwnedObjectPath>, _> = reply.body().deserialize()
-        else {
+        let Ok(paths): Result<Vec<OwnedObjectPath>, _> = reply.body().deserialize() else {
             continue;
         };
         for ap_path in paths {
             let ap_str = ap_path.to_string();
-            if let Ok(props) = get_all_props(conn, &ap_str, IFACE_AP) {
-                aps.push((ap_str, props));
+            if let Ok(ap) = iface_props(conn, &ap_str, IFACE_AP) {
+                aps.push((ap_str, ap));
             }
         }
     }
     aps
 }
 
-pub fn get_devices() -> Result<Vec<WifiDevice>, String> {
-    with_nm_connection(|conn| {
+/// A saved profile on `target` (portable or locked to it), if any.
+fn compatible_profile(profiles: &[(String, String)], iface: &str) -> Option<String> {
+    profiles
+        .iter()
+        .find(|(_, locked)| locked.is_empty() || *locked == iface)
+        .map(|(path, _)| path.clone())
+}
+
+fn activate_connection(
+    conn: &zbus::blocking::Connection,
+    settings_path: &str,
+    device_path: &str,
+) -> ApiResult<()> {
+    let settings_obj =
+        ObjectPath::try_from(settings_path).map_err(|e| format!("Invalid connection path: {e}"))?;
+    let device_obj =
+        ObjectPath::try_from(device_path).map_err(|e| format!("Invalid device path: {e}"))?;
+    let specific_obj =
+        ObjectPath::try_from(NULL_PATH).map_err(|e| format!("Invalid null path: {e}"))?;
+    conn.call_method(
+        Some(NM_SERVICE),
+        NM_PATH,
+        Some(IFACE_NM),
+        "ActivateConnection",
+        &(settings_obj, device_obj, specific_obj),
+    )
+    .map_err(|e| format!("Failed to activate connection: {e}"))?;
+    Ok(())
+}
+
+pub fn get_devices() -> ApiResult<Vec<WifiDevice>> {
+    with_connection(|conn| {
         let devices = collect_wifi_devices(conn)?;
         let mut out = Vec::new();
         for dev in &devices {
             let mut active_ssid = String::new();
             if dev.state == DEVICE_STATE_ACTIVATED && dev.active_ap != NULL_PATH {
-                if let Ok(ap) = get_all_props(conn, &dev.active_ap, IFACE_AP) {
-                    active_ssid = ssid_to_string(&get_ssid_bytes(&ap, "Ssid"));
+                if let Ok(ap) = iface_props(conn, &dev.active_ap, IFACE_AP) {
+                    active_ssid = props::bytes_to_string(&props::get_bytes(&ap, "Ssid"));
                 }
             }
             // Hardware identity for the adapter picker (e.g. iwlwifi on
@@ -447,12 +341,12 @@ pub fn get_devices() -> Result<Vec<WifiDevice>, String> {
     })
 }
 
-pub fn get_wifi_status(device: String) -> Result<WifiStatus, String> {
-    with_nm_connection(|conn| {
+pub fn get_wifi_status(device: String) -> ApiResult<WifiStatus> {
+    with_connection(|conn| {
         let devices = collect_wifi_devices(conn)?;
 
-        let nm_props = get_all_props(conn, NM_PATH, IFACE_NM)?;
-        let enabled = get_bool(&nm_props, "WirelessEnabled");
+        let nm_state = iface_props(conn, NM_PATH, IFACE_NM)?;
+        let enabled = props::get_bool(&nm_state, "WirelessEnabled");
 
         let Some(dev) = resolve_device(&devices, &device) else {
             return Ok(WifiStatus {
@@ -468,9 +362,9 @@ pub fn get_wifi_status(device: String) -> Result<WifiStatus, String> {
         let mut active_signal: u8 = 0;
         let connected = dev.state == DEVICE_STATE_ACTIVATED && dev.active_ap != NULL_PATH;
         if connected {
-            if let Ok(ap_props) = get_all_props(conn, &dev.active_ap, IFACE_AP) {
-                active_ssid = ssid_to_string(&get_ssid_bytes(&ap_props, "Ssid"));
-                active_signal = get_u8(&ap_props, "Strength");
+            if let Ok(ap_props) = iface_props(conn, &dev.active_ap, IFACE_AP) {
+                active_ssid = props::bytes_to_string(&props::get_bytes(&ap_props, "Ssid"));
+                active_signal = props::get_u8(&ap_props, "Strength");
             }
         }
 
@@ -484,8 +378,8 @@ pub fn get_wifi_status(device: String) -> Result<WifiStatus, String> {
     })
 }
 
-pub fn get_networks(device: String) -> Result<Vec<WifiNetwork>, String> {
-    with_nm_connection(|conn| {
+pub fn get_networks(device: String) -> ApiResult<Vec<WifiNetwork>> {
+    with_connection(|conn| {
         let devices = collect_wifi_devices(conn)?;
         let Some(target) = resolve_device(&devices, &device) else {
             return Ok(Vec::new());
@@ -500,27 +394,26 @@ pub fn get_networks(device: String) -> Result<Vec<WifiNetwork>, String> {
         // strongest BSSID per SSID.
         let mut by_ssid: HashMap<String, WifiNetwork> = HashMap::new();
         for (ap_path, ap) in &aps {
-            let ssid_bytes = get_ssid_bytes(ap, "Ssid");
-            let ssid = ssid_to_string(&ssid_bytes);
+            let ssid_bytes = props::get_bytes(ap, "Ssid");
+            let ssid = props::bytes_to_string(&ssid_bytes);
             if ssid.is_empty() {
                 continue;
             }
             let candidate = WifiNetwork {
                 ssid: ssid.clone(),
-                bssid: get_string(ap, "HwAddress"),
-                signal: get_u8(ap, "Strength"),
-                frequency: get_u32(ap, "Frequency"),
+                bssid: props::get_string(ap, "HwAddress"),
+                signal: props::get_u8(ap, "Strength"),
+                frequency: props::get_u32(ap, "Frequency"),
                 security: ap_security(
-                    get_u32(ap, "Flags"),
-                    get_u32(ap, "WpaFlags"),
-                    get_u32(ap, "RsnFlags"),
+                    props::get_u32(ap, "Flags"),
+                    props::get_u32(ap, "WpaFlags"),
+                    props::get_u32(ap, "RsnFlags"),
                 ),
                 in_use: *ap_path == active_ap,
                 saved: saved.contains_key(&ssid_bytes),
             };
             match by_ssid.get(&ssid) {
-                Some(existing)
-                    if existing.signal >= candidate.signal && !candidate.in_use => {}
+                Some(existing) if existing.signal >= candidate.signal && !candidate.in_use => {}
                 _ => {
                     by_ssid.insert(ssid, candidate);
                 }
@@ -538,8 +431,8 @@ pub fn get_networks(device: String) -> Result<Vec<WifiNetwork>, String> {
     })
 }
 
-pub fn request_scan() -> Result<(), String> {
-    with_nm_connection(|conn| {
+pub fn request_scan() -> ApiResult<()> {
+    with_connection(|conn| {
         let devices = collect_wifi_devices(conn)?;
         if devices.is_empty() {
             return Err("No WiFi device found".to_string());
@@ -581,8 +474,8 @@ pub fn request_scan() -> Result<(), String> {
     })
 }
 
-pub fn set_wifi_enabled(enabled: bool) -> Result<(), String> {
-    with_nm_connection(|conn| {
+pub fn set_wifi_enabled(enabled: bool) -> ApiResult<()> {
+    with_connection(|conn| {
         conn.call_method(
             Some(NM_SERVICE),
             NM_PATH,
@@ -595,30 +488,8 @@ pub fn set_wifi_enabled(enabled: bool) -> Result<(), String> {
     })
 }
 
-fn activate_connection(
-    conn: &Connection,
-    settings_path: &str,
-    device_path: &str,
-) -> Result<(), String> {
-    let settings_obj = ObjectPath::try_from(settings_path)
-        .map_err(|e| format!("Invalid connection path: {e}"))?;
-    let device_obj = ObjectPath::try_from(device_path)
-        .map_err(|e| format!("Invalid device path: {e}"))?;
-    let specific_obj =
-        ObjectPath::try_from(NULL_PATH).map_err(|e| format!("Invalid null path: {e}"))?;
-    conn.call_method(
-        Some(NM_SERVICE),
-        NM_PATH,
-        Some(IFACE_NM),
-        "ActivateConnection",
-        &(settings_obj, device_obj, specific_obj),
-    )
-    .map_err(|e| format!("Failed to activate connection: {e}"))?;
-    Ok(())
-}
-
-pub fn connect_saved(ssid: String, device: String) -> Result<(), String> {
-    with_nm_connection(|conn| {
+pub fn connect_saved(ssid: String, device: String) -> ApiResult<()> {
+    with_connection(|conn| {
         let devices = collect_wifi_devices(conn)?;
         let Some(target) = resolve_device(&devices, &device) else {
             return Err("No WiFi device found".to_string());
@@ -630,21 +501,18 @@ pub fn connect_saved(ssid: String, device: String) -> Result<(), String> {
         // The user's explicit adapter choice wins: only a profile compatible
         // with it may be used. A profile locked to another adapter must NOT
         // hijack the connection onto that adapter (that was bug #1).
-        if let Some((path, _)) = profiles
-            .iter()
-            .find(|(_, locked)| locked.is_empty() || *locked == target.iface)
-        {
-            return activate_connection(conn, path, &target.path);
+        if let Some(path) = compatible_profile(&profiles, &target.iface) {
+            return activate_connection(conn, &path, &target.path);
         }
         Err(bound_error(&ssid, &profiles))
     })
 }
 
-pub fn connect_new(ssid: String, password: String, device: String) -> Result<(), String> {
+pub fn connect_new(ssid: String, password: String, device: String) -> ApiResult<()> {
     if ssid.trim().is_empty() {
         return Err("SSID must not be empty".to_string());
     }
-    with_nm_connection(|conn| {
+    with_connection(|conn| {
         let devices = collect_wifi_devices(conn)?;
         let Some(target) = resolve_device(&devices, &device) else {
             return Err("No WiFi device found".to_string());
@@ -655,11 +523,8 @@ pub fn connect_new(ssid: String, password: String, device: String) -> Result<(),
         // profile on the selected adapter.
         if password.is_empty() {
             let profiles = profiles_for_ssid(conn, &ssid);
-            if let Some((path, _)) = profiles
-                .iter()
-                .find(|(_, locked)| locked.is_empty() || *locked == target.iface)
-            {
-                return activate_connection(conn, path, &target.path);
+            if let Some(path) = compatible_profile(&profiles, &target.iface) {
+                return activate_connection(conn, &path, &target.path);
             }
             if !profiles.is_empty() {
                 return Err(bound_error(&ssid, &profiles));
@@ -713,8 +578,8 @@ pub fn connect_new(ssid: String, password: String, device: String) -> Result<(),
     })
 }
 
-pub fn disconnect(device: String) -> Result<(), String> {
-    with_nm_connection(|conn| {
+pub fn disconnect(device: String) -> ApiResult<()> {
+    with_connection(|conn| {
         let devices = collect_wifi_devices(conn)?;
         // Prefer the selected adapter's active connection; with no explicit
         // selection, fall back to any active wifi connection.
@@ -748,8 +613,8 @@ pub fn disconnect(device: String) -> Result<(), String> {
     })
 }
 
-pub fn forget(ssid: String) -> Result<u32, String> {
-    with_nm_connection(|conn| {
+pub fn forget(ssid: String) -> ApiResult<u32> {
+    with_connection(|conn| {
         let profiles = profiles_for_ssid(conn, &ssid);
         if profiles.is_empty() {
             return Err(format!("No saved connection for '{ssid}'"));
@@ -779,15 +644,14 @@ pub fn forget(ssid: String) -> Result<u32, String> {
     })
 }
 
-pub fn subscribe_wifi_events(sink: StreamSink<WifiEvent>) -> Result<(), String> {
+pub fn subscribe_wifi_events(sink: StreamSink<WifiEvent>) -> ApiResult<()> {
     // Idempotent: Dart may call connect() again after rebuilds/hot-restart.
     if SUBSCRIBED.swap(true, Ordering::SeqCst) {
         return Ok(());
     }
 
-    let conn = get_system_connection().map_err(|e| {
+    let conn = bus::system_connection().inspect_err(|_| {
         SUBSCRIBED.store(false, Ordering::SeqCst);
-        e
     })?;
     let dbus = DBusProxy::new(&conn).map_err(|e| {
         SUBSCRIBED.store(false, Ordering::SeqCst);
@@ -797,54 +661,23 @@ pub fn subscribe_wifi_events(sink: StreamSink<WifiEvent>) -> Result<(), String> 
     // Only NetworkManager signals. Without the sender + path filter, every
     // PropertiesChanged on the system bus (BlueZ, UPower, ...) would wake
     // the Dart isolate.
-    let props_rule = MatchRule::builder()
-        .msg_type(zbus::message::Type::Signal)
-        .sender(NM_SERVICE)
-        .map_err(|e| format!("Failed to create properties match rule: {e}"))?
-        .interface(IFACE_PROPS)
-        .map_err(|e| format!("Failed to create properties match rule: {e}"))?
-        .path_namespace(NM_PATH_PREFIX)
-        .map_err(|e| format!("Failed to create properties match rule: {e}"))?
-        .build();
-
-    let obj_mgr_rule = MatchRule::builder()
-        .msg_type(zbus::message::Type::Signal)
-        .sender(NM_SERVICE)
-        .map_err(|e| format!("Failed to create ObjectManager match rule: {e}"))?
-        .interface(IFACE_OBJ_MGR)
-        .map_err(|e| format!("Failed to create ObjectManager match rule: {e}"))?
-        .path_namespace(NM_PATH_PREFIX)
-        .map_err(|e| format!("Failed to create ObjectManager match rule: {e}"))?
-        .build();
-
-    let wifi_signal_rule = MatchRule::builder()
-        .msg_type(zbus::message::Type::Signal)
-        .sender(NM_SERVICE)
-        .map_err(|e| format!("Failed to create wireless match rule: {e}"))?
-        .interface(IFACE_WIFI_DEVICE)
-        .map_err(|e| format!("Failed to create wireless match rule: {e}"))?
-        .path_namespace(NM_PATH_PREFIX)
-        .map_err(|e| format!("Failed to create wireless match rule: {e}"))?
-        .build();
-
-    dbus.add_match_rule(props_rule).map_err(|e| {
-        SUBSCRIBED.store(false, Ordering::SeqCst);
-        format!("Failed to add properties match rule: {e}")
-    })?;
-    dbus.add_match_rule(obj_mgr_rule).map_err(|e| {
-        SUBSCRIBED.store(false, Ordering::SeqCst);
-        format!("Failed to add ObjectManager match rule: {e}")
-    })?;
-    dbus.add_match_rule(wifi_signal_rule).map_err(|e| {
-        SUBSCRIBED.store(false, Ordering::SeqCst);
-        format!("Failed to add wireless match rule: {e}")
-    })?;
+    let props_rule = events::signal_rule(NM_SERVICE, IFACE_PROPS, NM_PATH_PREFIX)?;
+    let obj_mgr_rule = events::signal_rule(NM_SERVICE, IFACE_OBJ_MGR, NM_PATH_PREFIX)?;
+    let wifi_signal_rule = events::signal_rule(NM_SERVICE, IFACE_WIFI_DEVICE, NM_PATH_PREFIX)?;
+    for (rule, name) in [
+        (props_rule, "properties"),
+        (obj_mgr_rule, "ObjectManager"),
+        (wifi_signal_rule, "wireless"),
+    ] {
+        if let Err(e) = dbus.add_match_rule(rule) {
+            SUBSCRIBED.store(false, Ordering::SeqCst);
+            return Err(format!("Failed to add {name} match rule: {e}"));
+        }
+    }
 
     thread::spawn(move || {
-        let iter = MessageIterator::from(&conn);
-        // Per-path last-emit for PropertiesChanged throttling (strength churn).
-        let mut last_emit: HashMap<String, Instant> = HashMap::new();
-        for msg in iter {
+        let mut throttle = ThrottleMap::new(PROPS_THROTTLE);
+        for msg in MessageIterator::from(&conn) {
             let Ok(msg) = msg else { continue };
             let header = msg.header();
             let path = header.path().map(|p| p.to_string()).unwrap_or_default();
@@ -863,24 +696,16 @@ pub fn subscribe_wifi_events(sink: StreamSink<WifiEvent>) -> Result<(), String> 
             };
             // Throttle only the noisy updates per path.
             // Added/removed always pass through immediately.
-            if matches!(event_type, "properties_changed" | "state_changed") {
-                let now = Instant::now();
-                if let Some(prev) = last_emit.get(&path) {
-                    if now.duration_since(*prev) < PROPS_THROTTLE {
-                        continue;
-                    }
-                }
-                last_emit.insert(path.clone(), now);
+            let throttled = matches!(event_type, "properties_changed" | "state_changed");
+            if !throttle.should_emit(&path, throttled) {
+                continue;
             }
-
             let event = WifiEvent {
                 event_type: event_type.to_string(),
                 path,
             };
-
             if sink.add(event).is_err() {
-                // Dart stream listener has closed/canceled
-                break;
+                break; // Dart listener closed/canceled.
             }
         }
         SUBSCRIBED.store(false, Ordering::SeqCst);

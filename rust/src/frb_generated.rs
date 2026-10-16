@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 105091633;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 2071830572;
 
 // Section: executor
 
@@ -378,6 +378,38 @@ fn wire__crate__api__wifi__get_networks_impl(
         },
     )
 }
+fn wire__crate__api__sound__get_sound_state_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "get_sound_state",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::sound::get_sound_state()?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__wifi__get_wifi_status_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -469,6 +501,42 @@ fn wire__crate__api__simple__init_app_impl(
                     let output_ok = Ok::<_, ()>({
                         crate::api::simple::init_app();
                     })?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__sound__move_stream_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "move_stream",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_index = <u32>::sse_decode(&mut deserializer);
+            let api_is_playback = <bool>::sse_decode(&mut deserializer);
+            let api_device = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok =
+                        crate::api::sound::move_stream(api_index, api_is_playback, api_device)?;
                     std::result::Result::Ok(output_ok)
                 })())
             }
@@ -606,6 +674,108 @@ fn wire__crate__api__bluetooth__set_adapter_power_impl(
         },
     )
 }
+fn wire__crate__api__sound__set_default_sink_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_default_sink",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_name = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::sound::set_default_sink(api_name)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__sound__set_default_source_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_default_source",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_name = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::sound::set_default_source(api_name)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__sound__set_device_port_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_device_port",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_device = <String>::sse_decode(&mut deserializer);
+            let api_port = <String>::sse_decode(&mut deserializer);
+            let api_is_source = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok =
+                        crate::api::sound::set_device_port(api_device, api_port, api_is_source)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__bluetooth__set_device_trusted_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -635,6 +805,217 @@ fn wire__crate__api__bluetooth__set_device_trusted_impl(
                 transform_result_sse::<_, String>((move || {
                     let output_ok =
                         crate::api::bluetooth::set_device_trusted(api_path, api_trusted)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__sound__set_sink_mute_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_sink_mute",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_name = <String>::sse_decode(&mut deserializer);
+            let api_mute = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::sound::set_sink_mute(api_name, api_mute)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__sound__set_sink_volume_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_sink_volume",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_name = <String>::sse_decode(&mut deserializer);
+            let api_percent = <u8>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::sound::set_sink_volume(api_name, api_percent)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__sound__set_source_mute_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_source_mute",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_name = <String>::sse_decode(&mut deserializer);
+            let api_mute = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::sound::set_source_mute(api_name, api_mute)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__sound__set_source_volume_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_source_volume",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_name = <String>::sse_decode(&mut deserializer);
+            let api_percent = <u8>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::sound::set_source_volume(api_name, api_percent)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__sound__set_stream_mute_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_stream_mute",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_index = <u32>::sse_decode(&mut deserializer);
+            let api_is_playback = <bool>::sse_decode(&mut deserializer);
+            let api_mute = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok =
+                        crate::api::sound::set_stream_mute(api_index, api_is_playback, api_mute)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__sound__set_stream_volume_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_stream_volume",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_index = <u32>::sse_decode(&mut deserializer);
+            let api_is_playback = <bool>::sse_decode(&mut deserializer);
+            let api_percent = <u8>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::sound::set_stream_volume(
+                        api_index,
+                        api_is_playback,
+                        api_percent,
+                    )?;
                     std::result::Result::Ok(output_ok)
                 })())
             }
@@ -774,6 +1155,42 @@ fn wire__crate__api__bluetooth__subscribe_bluetooth_events_impl(
         },
     )
 }
+fn wire__crate__api__sound__subscribe_sound_events_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "subscribe_sound_events",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_sink = <StreamSink<
+                crate::api::sound::SoundEvent,
+                flutter_rust_bridge::for_generated::SseCodec,
+            >>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, String>((move || {
+                    let output_ok = crate::api::sound::subscribe_sound_events(api_sink)?;
+                    std::result::Result::Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__wifi__subscribe_wifi_events_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -826,6 +1243,16 @@ impl SseDecode
         crate::api::bluetooth::BluetoothEvent,
         flutter_rust_bridge::for_generated::SseCodec,
     >
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <String>::sse_decode(deserializer);
+        return StreamSink::deserialize(inner);
+    }
+}
+
+impl SseDecode
+    for StreamSink<crate::api::sound::SoundEvent, flutter_rust_bridge::for_generated::SseCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -944,6 +1371,42 @@ impl SseDecode for Vec<u8> {
     }
 }
 
+impl SseDecode for Vec<crate::api::sound::SoundDevice> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::sound::SoundDevice>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::sound::SoundPort> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::sound::SoundPort>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::sound::SoundStream> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::sound::SoundStream>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for Vec<crate::api::wifi::WifiDevice> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -965,6 +1428,94 @@ impl SseDecode for Vec<crate::api::wifi::WifiNetwork> {
             ans_.push(<crate::api::wifi::WifiNetwork>::sse_decode(deserializer));
         }
         return ans_;
+    }
+}
+
+impl SseDecode for crate::api::sound::SoundDevice {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_description = <String>::sse_decode(deserializer);
+        let mut var_volumePercent = <u8>::sse_decode(deserializer);
+        let mut var_muted = <bool>::sse_decode(deserializer);
+        let mut var_isDefault = <bool>::sse_decode(deserializer);
+        let mut var_isMonitor = <bool>::sse_decode(deserializer);
+        let mut var_activePort = <String>::sse_decode(deserializer);
+        let mut var_ports = <Vec<crate::api::sound::SoundPort>>::sse_decode(deserializer);
+        return crate::api::sound::SoundDevice {
+            name: var_name,
+            description: var_description,
+            volume_percent: var_volumePercent,
+            muted: var_muted,
+            is_default: var_isDefault,
+            is_monitor: var_isMonitor,
+            active_port: var_activePort,
+            ports: var_ports,
+        };
+    }
+}
+
+impl SseDecode for crate::api::sound::SoundEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_eventType = <String>::sse_decode(deserializer);
+        let mut var_detail = <String>::sse_decode(deserializer);
+        return crate::api::sound::SoundEvent {
+            event_type: var_eventType,
+            detail: var_detail,
+        };
+    }
+}
+
+impl SseDecode for crate::api::sound::SoundPort {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_description = <String>::sse_decode(deserializer);
+        return crate::api::sound::SoundPort {
+            name: var_name,
+            description: var_description,
+        };
+    }
+}
+
+impl SseDecode for crate::api::sound::SoundState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_sinks = <Vec<crate::api::sound::SoundDevice>>::sse_decode(deserializer);
+        let mut var_sources = <Vec<crate::api::sound::SoundDevice>>::sse_decode(deserializer);
+        let mut var_playback = <Vec<crate::api::sound::SoundStream>>::sse_decode(deserializer);
+        let mut var_recording = <Vec<crate::api::sound::SoundStream>>::sse_decode(deserializer);
+        let mut var_defaultSink = <String>::sse_decode(deserializer);
+        let mut var_defaultSource = <String>::sse_decode(deserializer);
+        return crate::api::sound::SoundState {
+            sinks: var_sinks,
+            sources: var_sources,
+            playback: var_playback,
+            recording: var_recording,
+            default_sink: var_defaultSink,
+            default_source: var_defaultSource,
+        };
+    }
+}
+
+impl SseDecode for crate::api::sound::SoundStream {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_index = <u32>::sse_decode(deserializer);
+        let mut var_appName = <String>::sse_decode(deserializer);
+        let mut var_streamName = <String>::sse_decode(deserializer);
+        let mut var_volumePercent = <u8>::sse_decode(deserializer);
+        let mut var_muted = <bool>::sse_decode(deserializer);
+        let mut var_device = <String>::sse_decode(deserializer);
+        return crate::api::sound::SoundStream {
+            index: var_index,
+            app_name: var_appName,
+            stream_name: var_streamName,
+            volume_percent: var_volumePercent,
+            muted: var_muted,
+            device: var_device,
+        };
     }
 }
 
@@ -1087,27 +1638,41 @@ fn pde_ffi_dispatcher_primary_impl(
         8 => wire__crate__api__bluetooth__get_devices_impl(port, ptr, rust_vec_len, data_len),
         9 => wire__crate__api__wifi__get_devices_impl(port, ptr, rust_vec_len, data_len),
         10 => wire__crate__api__wifi__get_networks_impl(port, ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__wifi__get_wifi_status_impl(port, ptr, rust_vec_len, data_len),
-        13 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
-        14 => wire__crate__api__bluetooth__pair_device_impl(port, ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__bluetooth__remove_device_impl(port, ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__wifi__request_scan_impl(port, ptr, rust_vec_len, data_len),
-        17 => {
+        11 => wire__crate__api__sound__get_sound_state_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__wifi__get_wifi_status_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__sound__move_stream_impl(port, ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__bluetooth__pair_device_impl(port, ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__bluetooth__remove_device_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__wifi__request_scan_impl(port, ptr, rust_vec_len, data_len),
+        19 => {
             wire__crate__api__bluetooth__set_adapter_power_impl(port, ptr, rust_vec_len, data_len)
         }
-        18 => {
+        20 => wire__crate__api__sound__set_default_sink_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__sound__set_default_source_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__sound__set_device_port_impl(port, ptr, rust_vec_len, data_len),
+        23 => {
             wire__crate__api__bluetooth__set_device_trusted_impl(port, ptr, rust_vec_len, data_len)
         }
-        19 => wire__crate__api__wifi__set_wifi_enabled_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__bluetooth__start_scan_impl(port, ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__bluetooth__stop_scan_impl(port, ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__bluetooth__subscribe_bluetooth_events_impl(
+        24 => wire__crate__api__sound__set_sink_mute_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__sound__set_sink_volume_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__sound__set_source_mute_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__sound__set_source_volume_impl(port, ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__sound__set_stream_mute_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__sound__set_stream_volume_impl(port, ptr, rust_vec_len, data_len),
+        30 => wire__crate__api__wifi__set_wifi_enabled_impl(port, ptr, rust_vec_len, data_len),
+        31 => wire__crate__api__bluetooth__start_scan_impl(port, ptr, rust_vec_len, data_len),
+        32 => wire__crate__api__bluetooth__stop_scan_impl(port, ptr, rust_vec_len, data_len),
+        33 => wire__crate__api__bluetooth__subscribe_bluetooth_events_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        23 => wire__crate__api__wifi__subscribe_wifi_events_impl(port, ptr, rust_vec_len, data_len),
+        34 => {
+            wire__crate__api__sound__subscribe_sound_events_impl(port, ptr, rust_vec_len, data_len)
+        }
+        35 => wire__crate__api__wifi__subscribe_wifi_events_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1120,7 +1685,7 @@ fn pde_ffi_dispatcher_sync_impl(
 ) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        12 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1195,6 +1760,116 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::bluetooth::BluetoothEvent>
     for crate::api::bluetooth::BluetoothEvent
 {
     fn into_into_dart(self) -> crate::api::bluetooth::BluetoothEvent {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::sound::SoundDevice {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.description.into_into_dart().into_dart(),
+            self.volume_percent.into_into_dart().into_dart(),
+            self.muted.into_into_dart().into_dart(),
+            self.is_default.into_into_dart().into_dart(),
+            self.is_monitor.into_into_dart().into_dart(),
+            self.active_port.into_into_dart().into_dart(),
+            self.ports.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::sound::SoundDevice
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::sound::SoundDevice>
+    for crate::api::sound::SoundDevice
+{
+    fn into_into_dart(self) -> crate::api::sound::SoundDevice {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::sound::SoundEvent {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.event_type.into_into_dart().into_dart(),
+            self.detail.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::sound::SoundEvent {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::sound::SoundEvent>
+    for crate::api::sound::SoundEvent
+{
+    fn into_into_dart(self) -> crate::api::sound::SoundEvent {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::sound::SoundPort {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.description.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::sound::SoundPort {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::sound::SoundPort>
+    for crate::api::sound::SoundPort
+{
+    fn into_into_dart(self) -> crate::api::sound::SoundPort {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::sound::SoundState {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.sinks.into_into_dart().into_dart(),
+            self.sources.into_into_dart().into_dart(),
+            self.playback.into_into_dart().into_dart(),
+            self.recording.into_into_dart().into_dart(),
+            self.default_sink.into_into_dart().into_dart(),
+            self.default_source.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::sound::SoundState {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::sound::SoundState>
+    for crate::api::sound::SoundState
+{
+    fn into_into_dart(self) -> crate::api::sound::SoundState {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::sound::SoundStream {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.index.into_into_dart().into_dart(),
+            self.app_name.into_into_dart().into_dart(),
+            self.stream_name.into_into_dart().into_dart(),
+            self.volume_percent.into_into_dart().into_dart(),
+            self.muted.into_into_dart().into_dart(),
+            self.device.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::sound::SoundStream
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::sound::SoundStream>
+    for crate::api::sound::SoundStream
+{
+    fn into_into_dart(self) -> crate::api::sound::SoundStream {
         self
     }
 }
@@ -1304,6 +1979,15 @@ impl SseEncode
 }
 
 impl SseEncode
+    for StreamSink<crate::api::sound::SoundEvent, flutter_rust_bridge::for_generated::SseCodec>
+{
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        unimplemented!("")
+    }
+}
+
+impl SseEncode
     for StreamSink<crate::api::wifi::WifiEvent, flutter_rust_bridge::for_generated::SseCodec>
 {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -1385,6 +2069,36 @@ impl SseEncode for Vec<u8> {
     }
 }
 
+impl SseEncode for Vec<crate::api::sound::SoundDevice> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::sound::SoundDevice>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::sound::SoundPort> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::sound::SoundPort>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::sound::SoundStream> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::sound::SoundStream>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for Vec<crate::api::wifi::WifiDevice> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1402,6 +2116,60 @@ impl SseEncode for Vec<crate::api::wifi::WifiNetwork> {
         for item in self {
             <crate::api::wifi::WifiNetwork>::sse_encode(item, serializer);
         }
+    }
+}
+
+impl SseEncode for crate::api::sound::SoundDevice {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <String>::sse_encode(self.description, serializer);
+        <u8>::sse_encode(self.volume_percent, serializer);
+        <bool>::sse_encode(self.muted, serializer);
+        <bool>::sse_encode(self.is_default, serializer);
+        <bool>::sse_encode(self.is_monitor, serializer);
+        <String>::sse_encode(self.active_port, serializer);
+        <Vec<crate::api::sound::SoundPort>>::sse_encode(self.ports, serializer);
+    }
+}
+
+impl SseEncode for crate::api::sound::SoundEvent {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.event_type, serializer);
+        <String>::sse_encode(self.detail, serializer);
+    }
+}
+
+impl SseEncode for crate::api::sound::SoundPort {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <String>::sse_encode(self.description, serializer);
+    }
+}
+
+impl SseEncode for crate::api::sound::SoundState {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<crate::api::sound::SoundDevice>>::sse_encode(self.sinks, serializer);
+        <Vec<crate::api::sound::SoundDevice>>::sse_encode(self.sources, serializer);
+        <Vec<crate::api::sound::SoundStream>>::sse_encode(self.playback, serializer);
+        <Vec<crate::api::sound::SoundStream>>::sse_encode(self.recording, serializer);
+        <String>::sse_encode(self.default_sink, serializer);
+        <String>::sse_encode(self.default_source, serializer);
+    }
+}
+
+impl SseEncode for crate::api::sound::SoundStream {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <u32>::sse_encode(self.index, serializer);
+        <String>::sse_encode(self.app_name, serializer);
+        <String>::sse_encode(self.stream_name, serializer);
+        <u8>::sse_encode(self.volume_percent, serializer);
+        <bool>::sse_encode(self.muted, serializer);
+        <String>::sse_encode(self.device, serializer);
     }
 }
 

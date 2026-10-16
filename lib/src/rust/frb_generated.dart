@@ -5,6 +5,7 @@
 
 import 'api/bluetooth.dart';
 import 'api/simple.dart';
+import 'api/sound.dart';
 import 'api/wifi.dart';
 
 import 'dart:async';
@@ -71,7 +72,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => 105091633;
+  int get rustContentHash => 2071830572;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -110,11 +111,19 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<WifiNetwork>> crateApiWifiGetNetworks({required String device});
 
+  Future<SoundState> crateApiSoundGetSoundState();
+
   Future<WifiStatus> crateApiWifiGetWifiStatus({required String device});
 
   String crateApiSimpleGreet({required String name});
 
   Future<void> crateApiSimpleInitApp();
+
+  Future<void> crateApiSoundMoveStream({
+    required int index,
+    required bool isPlayback,
+    required String device,
+  });
 
   Future<void> crateApiBluetoothPairDevice({required String path});
 
@@ -124,9 +133,51 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiBluetoothSetAdapterPower({required bool powered});
 
+  Future<void> crateApiSoundSetDefaultSink({required String name});
+
+  Future<void> crateApiSoundSetDefaultSource({required String name});
+
+  Future<void> crateApiSoundSetDevicePort({
+    required String device,
+    required String port,
+    required bool isSource,
+  });
+
   Future<void> crateApiBluetoothSetDeviceTrusted({
     required String path,
     required bool trusted,
+  });
+
+  Future<void> crateApiSoundSetSinkMute({
+    required String name,
+    required bool mute,
+  });
+
+  Future<void> crateApiSoundSetSinkVolume({
+    required String name,
+    required int percent,
+  });
+
+  Future<void> crateApiSoundSetSourceMute({
+    required String name,
+    required bool mute,
+  });
+
+  Future<void> crateApiSoundSetSourceVolume({
+    required String name,
+    required int percent,
+  });
+
+  Future<void> crateApiSoundSetStreamMute({
+    required int index,
+    required bool isPlayback,
+    required bool mute,
+  });
+
+  Future<void> crateApiSoundSetStreamVolume({
+    required int index,
+    required bool isPlayback,
+    required int percent,
   });
 
   Future<void> crateApiWifiSetWifiEnabled({required bool enabled});
@@ -136,6 +187,8 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiBluetoothStopScan();
 
   Stream<BluetoothEvent> crateApiBluetoothSubscribeBluetoothEvents();
+
+  Stream<SoundEvent> crateApiSoundSubscribeSoundEvents();
 
   Stream<WifiEvent> crateApiWifiSubscribeWifiEvents();
 }
@@ -440,6 +493,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "get_networks", argNames: ["device"]);
 
   @override
+  Future<SoundState> crateApiSoundGetSoundState() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_sound_state,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundGetSoundStateConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundGetSoundStateConstMeta =>
+      const TaskConstMeta(debugName: "get_sound_state", argNames: []);
+
+  @override
   Future<WifiStatus> crateApiWifiGetWifiStatus({required String device}) {
     return handler.executeNormal(
       NormalTask(
@@ -449,7 +529,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 11,
+            funcId: 12,
             port: port_,
           );
         },
@@ -474,7 +554,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(name, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 13)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -499,7 +579,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 14,
             port: port_,
           );
         },
@@ -518,6 +598,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "init_app", argNames: []);
 
   @override
+  Future<void> crateApiSoundMoveStream({
+    required int index,
+    required bool isPlayback,
+    required String device,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(index, serializer);
+          sse_encode_bool(isPlayback, serializer);
+          sse_encode_String(device, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundMoveStreamConstMeta,
+        argValues: [index, isPlayback, device],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundMoveStreamConstMeta => const TaskConstMeta(
+    debugName: "move_stream",
+    argNames: ["index", "isPlayback", "device"],
+  );
+
+  @override
   Future<void> crateApiBluetoothPairDevice({required String path}) {
     return handler.executeNormal(
       NormalTask(
@@ -527,7 +643,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 16,
             port: port_,
           );
         },
@@ -555,7 +671,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 17,
             port: port_,
           );
         },
@@ -582,7 +698,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 16,
+            funcId: 18,
             port: port_,
           );
         },
@@ -610,7 +726,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 17,
+            funcId: 19,
             port: port_,
           );
         },
@@ -632,6 +748,98 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiSoundSetDefaultSink({required String name}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(name, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 20,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundSetDefaultSinkConstMeta,
+        argValues: [name],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundSetDefaultSinkConstMeta =>
+      const TaskConstMeta(debugName: "set_default_sink", argNames: ["name"]);
+
+  @override
+  Future<void> crateApiSoundSetDefaultSource({required String name}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(name, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 21,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundSetDefaultSourceConstMeta,
+        argValues: [name],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundSetDefaultSourceConstMeta =>
+      const TaskConstMeta(debugName: "set_default_source", argNames: ["name"]);
+
+  @override
+  Future<void> crateApiSoundSetDevicePort({
+    required String device,
+    required String port,
+    required bool isSource,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(device, serializer);
+          sse_encode_String(port, serializer);
+          sse_encode_bool(isSource, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 22,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundSetDevicePortConstMeta,
+        argValues: [device, port, isSource],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundSetDevicePortConstMeta => const TaskConstMeta(
+    debugName: "set_device_port",
+    argNames: ["device", "port", "isSource"],
+  );
+
+  @override
   Future<void> crateApiBluetoothSetDeviceTrusted({
     required String path,
     required bool trusted,
@@ -645,7 +853,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 18,
+            funcId: 23,
             port: port_,
           );
         },
@@ -667,6 +875,216 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiSoundSetSinkMute({
+    required String name,
+    required bool mute,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(name, serializer);
+          sse_encode_bool(mute, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 24,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundSetSinkMuteConstMeta,
+        argValues: [name, mute],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundSetSinkMuteConstMeta => const TaskConstMeta(
+    debugName: "set_sink_mute",
+    argNames: ["name", "mute"],
+  );
+
+  @override
+  Future<void> crateApiSoundSetSinkVolume({
+    required String name,
+    required int percent,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(name, serializer);
+          sse_encode_u_8(percent, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 25,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundSetSinkVolumeConstMeta,
+        argValues: [name, percent],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundSetSinkVolumeConstMeta => const TaskConstMeta(
+    debugName: "set_sink_volume",
+    argNames: ["name", "percent"],
+  );
+
+  @override
+  Future<void> crateApiSoundSetSourceMute({
+    required String name,
+    required bool mute,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(name, serializer);
+          sse_encode_bool(mute, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 26,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundSetSourceMuteConstMeta,
+        argValues: [name, mute],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundSetSourceMuteConstMeta => const TaskConstMeta(
+    debugName: "set_source_mute",
+    argNames: ["name", "mute"],
+  );
+
+  @override
+  Future<void> crateApiSoundSetSourceVolume({
+    required String name,
+    required int percent,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(name, serializer);
+          sse_encode_u_8(percent, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 27,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundSetSourceVolumeConstMeta,
+        argValues: [name, percent],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundSetSourceVolumeConstMeta =>
+      const TaskConstMeta(
+        debugName: "set_source_volume",
+        argNames: ["name", "percent"],
+      );
+
+  @override
+  Future<void> crateApiSoundSetStreamMute({
+    required int index,
+    required bool isPlayback,
+    required bool mute,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(index, serializer);
+          sse_encode_bool(isPlayback, serializer);
+          sse_encode_bool(mute, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 28,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundSetStreamMuteConstMeta,
+        argValues: [index, isPlayback, mute],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundSetStreamMuteConstMeta => const TaskConstMeta(
+    debugName: "set_stream_mute",
+    argNames: ["index", "isPlayback", "mute"],
+  );
+
+  @override
+  Future<void> crateApiSoundSetStreamVolume({
+    required int index,
+    required bool isPlayback,
+    required int percent,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_u_32(index, serializer);
+          sse_encode_bool(isPlayback, serializer);
+          sse_encode_u_8(percent, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 29,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSoundSetStreamVolumeConstMeta,
+        argValues: [index, isPlayback, percent],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSoundSetStreamVolumeConstMeta =>
+      const TaskConstMeta(
+        debugName: "set_stream_volume",
+        argNames: ["index", "isPlayback", "percent"],
+      );
+
+  @override
   Future<void> crateApiWifiSetWifiEnabled({required bool enabled}) {
     return handler.executeNormal(
       NormalTask(
@@ -676,7 +1094,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 30,
             port: port_,
           );
         },
@@ -703,7 +1121,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 20,
+            funcId: 31,
             port: port_,
           );
         },
@@ -730,7 +1148,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 21,
+            funcId: 32,
             port: port_,
           );
         },
@@ -760,7 +1178,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 22,
+              funcId: 33,
               port: port_,
             );
           },
@@ -784,6 +1202,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Stream<SoundEvent> crateApiSoundSubscribeSoundEvents() {
+    final sink = RustStreamSink<SoundEvent>();
+    unawaited(
+      handler.executeNormal(
+        NormalTask(
+          callFfi: (port_) {
+            final serializer = SseSerializer(generalizedFrbRustBinding);
+            sse_encode_StreamSink_sound_event_Sse(sink, serializer);
+            pdeCallFfi(
+              generalizedFrbRustBinding,
+              serializer,
+              funcId: 34,
+              port: port_,
+            );
+          },
+          codec: SseCodec(
+            decodeSuccessData: sse_decode_unit,
+            decodeErrorData: sse_decode_String,
+          ),
+          constMeta: kCrateApiSoundSubscribeSoundEventsConstMeta,
+          argValues: [sink],
+          apiImpl: this,
+        ),
+      ),
+    );
+    return sink.stream;
+  }
+
+  TaskConstMeta get kCrateApiSoundSubscribeSoundEventsConstMeta =>
+      const TaskConstMeta(
+        debugName: "subscribe_sound_events",
+        argNames: ["sink"],
+      );
+
+  @override
   Stream<WifiEvent> crateApiWifiSubscribeWifiEvents() {
     final sink = RustStreamSink<WifiEvent>();
     unawaited(
@@ -795,7 +1248,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 23,
+              funcId: 35,
               port: port_,
             );
           },
@@ -826,6 +1279,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   RustStreamSink<BluetoothEvent> dco_decode_StreamSink_bluetooth_event_Sse(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError();
+  }
+
+  @protected
+  RustStreamSink<SoundEvent> dco_decode_StreamSink_sound_event_Sse(
     dynamic raw,
   ) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
@@ -913,6 +1374,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<SoundDevice> dco_decode_list_sound_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_sound_device).toList();
+  }
+
+  @protected
+  List<SoundPort> dco_decode_list_sound_port(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_sound_port).toList();
+  }
+
+  @protected
+  List<SoundStream> dco_decode_list_sound_stream(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_sound_stream).toList();
+  }
+
+  @protected
   List<WifiDevice> dco_decode_list_wifi_device(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_wifi_device).toList();
@@ -922,6 +1401,80 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<WifiNetwork> dco_decode_list_wifi_network(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_wifi_network).toList();
+  }
+
+  @protected
+  SoundDevice dco_decode_sound_device(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 8)
+      throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
+    return SoundDevice(
+      name: dco_decode_String(arr[0]),
+      description: dco_decode_String(arr[1]),
+      volumePercent: dco_decode_u_8(arr[2]),
+      muted: dco_decode_bool(arr[3]),
+      isDefault: dco_decode_bool(arr[4]),
+      isMonitor: dco_decode_bool(arr[5]),
+      activePort: dco_decode_String(arr[6]),
+      ports: dco_decode_list_sound_port(arr[7]),
+    );
+  }
+
+  @protected
+  SoundEvent dco_decode_sound_event(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return SoundEvent(
+      eventType: dco_decode_String(arr[0]),
+      detail: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
+  SoundPort dco_decode_sound_port(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return SoundPort(
+      name: dco_decode_String(arr[0]),
+      description: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
+  SoundState dco_decode_sound_state(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return SoundState(
+      sinks: dco_decode_list_sound_device(arr[0]),
+      sources: dco_decode_list_sound_device(arr[1]),
+      playback: dco_decode_list_sound_stream(arr[2]),
+      recording: dco_decode_list_sound_stream(arr[3]),
+      defaultSink: dco_decode_String(arr[4]),
+      defaultSource: dco_decode_String(arr[5]),
+    );
+  }
+
+  @protected
+  SoundStream dco_decode_sound_stream(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 6)
+      throw Exception('unexpected arr length: expect 6 but see ${arr.length}');
+    return SoundStream(
+      index: dco_decode_u_32(arr[0]),
+      appName: dco_decode_String(arr[1]),
+      streamName: dco_decode_String(arr[2]),
+      volumePercent: dco_decode_u_8(arr[3]),
+      muted: dco_decode_bool(arr[4]),
+      device: dco_decode_String(arr[5]),
+    );
   }
 
   @protected
@@ -1012,6 +1565,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   @protected
   RustStreamSink<BluetoothEvent> sse_decode_StreamSink_bluetooth_event_Sse(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    throw UnimplementedError('Unreachable ()');
+  }
+
+  @protected
+  RustStreamSink<SoundEvent> sse_decode_StreamSink_sound_event_Sse(
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -1113,6 +1674,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<SoundDevice> sse_decode_list_sound_device(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <SoundDevice>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_sound_device(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<SoundPort> sse_decode_list_sound_port(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <SoundPort>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_sound_port(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<SoundStream> sse_decode_list_sound_stream(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <SoundStream>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_sound_stream(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   List<WifiDevice> sse_decode_list_wifi_device(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1134,6 +1731,83 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       ans_.add(sse_decode_wifi_network(deserializer));
     }
     return ans_;
+  }
+
+  @protected
+  SoundDevice sse_decode_sound_device(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_description = sse_decode_String(deserializer);
+    var var_volumePercent = sse_decode_u_8(deserializer);
+    var var_muted = sse_decode_bool(deserializer);
+    var var_isDefault = sse_decode_bool(deserializer);
+    var var_isMonitor = sse_decode_bool(deserializer);
+    var var_activePort = sse_decode_String(deserializer);
+    var var_ports = sse_decode_list_sound_port(deserializer);
+    return SoundDevice(
+      name: var_name,
+      description: var_description,
+      volumePercent: var_volumePercent,
+      muted: var_muted,
+      isDefault: var_isDefault,
+      isMonitor: var_isMonitor,
+      activePort: var_activePort,
+      ports: var_ports,
+    );
+  }
+
+  @protected
+  SoundEvent sse_decode_sound_event(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_eventType = sse_decode_String(deserializer);
+    var var_detail = sse_decode_String(deserializer);
+    return SoundEvent(eventType: var_eventType, detail: var_detail);
+  }
+
+  @protected
+  SoundPort sse_decode_sound_port(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_description = sse_decode_String(deserializer);
+    return SoundPort(name: var_name, description: var_description);
+  }
+
+  @protected
+  SoundState sse_decode_sound_state(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_sinks = sse_decode_list_sound_device(deserializer);
+    var var_sources = sse_decode_list_sound_device(deserializer);
+    var var_playback = sse_decode_list_sound_stream(deserializer);
+    var var_recording = sse_decode_list_sound_stream(deserializer);
+    var var_defaultSink = sse_decode_String(deserializer);
+    var var_defaultSource = sse_decode_String(deserializer);
+    return SoundState(
+      sinks: var_sinks,
+      sources: var_sources,
+      playback: var_playback,
+      recording: var_recording,
+      defaultSink: var_defaultSink,
+      defaultSource: var_defaultSource,
+    );
+  }
+
+  @protected
+  SoundStream sse_decode_sound_stream(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_index = sse_decode_u_32(deserializer);
+    var var_appName = sse_decode_String(deserializer);
+    var var_streamName = sse_decode_String(deserializer);
+    var var_volumePercent = sse_decode_u_8(deserializer);
+    var var_muted = sse_decode_bool(deserializer);
+    var var_device = sse_decode_String(deserializer);
+    return SoundStream(
+      index: var_index,
+      appName: var_appName,
+      streamName: var_streamName,
+      volumePercent: var_volumePercent,
+      muted: var_muted,
+      device: var_device,
+    );
   }
 
   @protected
@@ -1253,6 +1927,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_StreamSink_sound_event_Sse(
+    RustStreamSink<SoundEvent> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(
+      self.setupAndSerialize(
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_sound_event,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+      ),
+      serializer,
+    );
+  }
+
+  @protected
   void sse_encode_StreamSink_wifi_event_Sse(
     RustStreamSink<WifiEvent> self,
     SseSerializer serializer,
@@ -1345,6 +2036,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_sound_device(
+    List<SoundDevice> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_sound_device(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_sound_port(
+    List<SoundPort> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_sound_port(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_sound_stream(
+    List<SoundStream> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_sound_stream(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_list_wifi_device(
     List<WifiDevice> self,
     SseSerializer serializer,
@@ -1366,6 +2093,55 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     for (final item in self) {
       sse_encode_wifi_network(item, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_sound_device(SoundDevice self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.description, serializer);
+    sse_encode_u_8(self.volumePercent, serializer);
+    sse_encode_bool(self.muted, serializer);
+    sse_encode_bool(self.isDefault, serializer);
+    sse_encode_bool(self.isMonitor, serializer);
+    sse_encode_String(self.activePort, serializer);
+    sse_encode_list_sound_port(self.ports, serializer);
+  }
+
+  @protected
+  void sse_encode_sound_event(SoundEvent self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.eventType, serializer);
+    sse_encode_String(self.detail, serializer);
+  }
+
+  @protected
+  void sse_encode_sound_port(SoundPort self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_String(self.description, serializer);
+  }
+
+  @protected
+  void sse_encode_sound_state(SoundState self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_sound_device(self.sinks, serializer);
+    sse_encode_list_sound_device(self.sources, serializer);
+    sse_encode_list_sound_stream(self.playback, serializer);
+    sse_encode_list_sound_stream(self.recording, serializer);
+    sse_encode_String(self.defaultSink, serializer);
+    sse_encode_String(self.defaultSource, serializer);
+  }
+
+  @protected
+  void sse_encode_sound_stream(SoundStream self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_u_32(self.index, serializer);
+    sse_encode_String(self.appName, serializer);
+    sse_encode_String(self.streamName, serializer);
+    sse_encode_u_8(self.volumePercent, serializer);
+    sse_encode_bool(self.muted, serializer);
+    sse_encode_String(self.device, serializer);
   }
 
   @protected

@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `adapter_cache`, `get_bool`, `get_i16`, `get_string`, `get_system_connection`, `is_transport_error`, `resolve_adapter_path_uncached`, `resolve_adapter_path`, `with_system_connection`
+// These functions are ignored because they are not marked as `pub`: `adapter_cache`, `device_method`, `resolve_adapter_path_uncached`, `resolve_adapter_path`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
 
 Future<AdapterInfo> getAdapter() =>

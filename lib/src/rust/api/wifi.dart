@@ -7,7 +7,7 @@ import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `activate_connection`, `ap_security`, `bound_error`, `collect_access_points`, `collect_wifi_devices`, `get_all_props`, `get_bool`, `get_managed_device_paths`, `get_obj_path`, `get_ssid_bytes`, `get_string`, `get_system_connection`, `get_u32`, `get_u8`, `is_transport_error`, `preferred_device`, `profiles_for_ssid`, `read_settings`, `resolve_device`, `saved_connections`, `settings_paths`, `ssid_to_string`, `with_nm_connection`
+// These functions are ignored because they are not marked as `pub`: `activate_connection`, `ap_security`, `bound_error`, `collect_access_points`, `collect_wifi_devices`, `compatible_profile`, `get_managed_device_paths`, `iface_props`, `preferred_device`, `profiles_for_ssid`, `read_settings`, `resolve_device`, `saved_connections`, `settings_paths`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `WifiDeviceInfo`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`
 

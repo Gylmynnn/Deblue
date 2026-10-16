@@ -8,6 +8,7 @@
 
 import 'api/bluetooth.dart';
 import 'api/simple.dart';
+import 'api/sound.dart';
 import 'api/wifi.dart';
 
 import 'dart:async';
@@ -32,6 +33,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RustStreamSink<BluetoothEvent> dco_decode_StreamSink_bluetooth_event_Sse(
     dynamic raw,
   );
+
+  @protected
+  RustStreamSink<SoundEvent> dco_decode_StreamSink_sound_event_Sse(dynamic raw);
 
   @protected
   RustStreamSink<WifiEvent> dco_decode_StreamSink_wifi_event_Sse(dynamic raw);
@@ -61,10 +65,34 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  List<SoundDevice> dco_decode_list_sound_device(dynamic raw);
+
+  @protected
+  List<SoundPort> dco_decode_list_sound_port(dynamic raw);
+
+  @protected
+  List<SoundStream> dco_decode_list_sound_stream(dynamic raw);
+
+  @protected
   List<WifiDevice> dco_decode_list_wifi_device(dynamic raw);
 
   @protected
   List<WifiNetwork> dco_decode_list_wifi_network(dynamic raw);
+
+  @protected
+  SoundDevice dco_decode_sound_device(dynamic raw);
+
+  @protected
+  SoundEvent dco_decode_sound_event(dynamic raw);
+
+  @protected
+  SoundPort dco_decode_sound_port(dynamic raw);
+
+  @protected
+  SoundState dco_decode_sound_state(dynamic raw);
+
+  @protected
+  SoundStream dco_decode_sound_stream(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -92,6 +120,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RustStreamSink<BluetoothEvent> sse_decode_StreamSink_bluetooth_event_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<SoundEvent> sse_decode_StreamSink_sound_event_Sse(
     SseDeserializer deserializer,
   );
 
@@ -127,10 +160,34 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
+  List<SoundDevice> sse_decode_list_sound_device(SseDeserializer deserializer);
+
+  @protected
+  List<SoundPort> sse_decode_list_sound_port(SseDeserializer deserializer);
+
+  @protected
+  List<SoundStream> sse_decode_list_sound_stream(SseDeserializer deserializer);
+
+  @protected
   List<WifiDevice> sse_decode_list_wifi_device(SseDeserializer deserializer);
 
   @protected
   List<WifiNetwork> sse_decode_list_wifi_network(SseDeserializer deserializer);
+
+  @protected
+  SoundDevice sse_decode_sound_device(SseDeserializer deserializer);
+
+  @protected
+  SoundEvent sse_decode_sound_event(SseDeserializer deserializer);
+
+  @protected
+  SoundPort sse_decode_sound_port(SseDeserializer deserializer);
+
+  @protected
+  SoundState sse_decode_sound_state(SseDeserializer deserializer);
+
+  @protected
+  SoundStream sse_decode_sound_stream(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -165,6 +222,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_StreamSink_bluetooth_event_Sse(
     RustStreamSink<BluetoothEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_sound_event_Sse(
+    RustStreamSink<SoundEvent> self,
     SseSerializer serializer,
   );
 
@@ -211,6 +274,24 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_sound_device(
+    List<SoundDevice> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_sound_port(
+    List<SoundPort> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_sound_stream(
+    List<SoundStream> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_wifi_device(
     List<WifiDevice> self,
     SseSerializer serializer,
@@ -221,6 +302,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     List<WifiNetwork> self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_sound_device(SoundDevice self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_sound_event(SoundEvent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_sound_port(SoundPort self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_sound_state(SoundState self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_sound_stream(SoundStream self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);
