@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // ═══════════════════════════════════════════════════════════════
-  // DARK MODE - Backgrounds (Obsidian settings style: flat, simple)
+  // EVERBLUSH - https://github.com/Everblush/everblush
+  // Background #141b1e, Lighter #232a2d, Foreground #dadada
   // ═══════════════════════════════════════════════════════════════
-  static const darkBg = Color(0xFF1E1E1E);
-  static const darkSurface = Color(0xFF262626);
-  static const darkSurfaceAlt = Color(0xFF2E2E2E);
+  // DARK MODE - Backgrounds (true Everblush)
+  // ═══════════════════════════════════════════════════════════════
+  static const darkBg = Color(0xFF141B1E);
+  static const darkSurface = Color(0xFF232A2D);
+  static const darkSurfaceAlt = Color(0xFF2E383C);
 
   // ═══════════════════════════════════════════════════════════════
   // LIGHT MODE - Backgrounds (Modern Cool Tone)
@@ -16,11 +19,11 @@ class AppColors {
   static const lightSurfaceAlt = Color(0xFFF0F4F8);
 
   // ═══════════════════════════════════════════════════════════════
-  // DARK MODE - Text Colors (muted gray like reference)
+  // DARK MODE - Text Colors (Everblush: #dadada + #b3b9b8)
   // ═══════════════════════════════════════════════════════════════
-  static const textDark = Color(0xFFDCDCDC);
-  static const textDarkSecondary = Color(0xFFA3A3A3);
-  static const textDarkTertiary = Color(0xFF7A7A7A);
+  static const textDark = Color(0xFFDADADA);
+  static const textDarkSecondary = Color(0xFFB3B9B8);
+  static const textDarkTertiary = Color(0xFF7F8E8D);
 
   // ═══════════════════════════════════════════════════════════════
   // LIGHT MODE - Text Colors
@@ -30,7 +33,7 @@ class AppColors {
   static const textLightTertiary = Color(0xFF8A9AAA);
 
   // ═══════════════════════════════════════════════════════════════
-  // ACTION COLORS - Dark Mode
+  // ACTION COLORS - Everblush palette (dark)
   // ═══════════════════════════════════════════════════════════════
   static const green = Color(0xFF8CCF7E);
   static const blue = Color(0xFF67B0E8);
@@ -44,9 +47,9 @@ class AppColors {
   static const cyanLight = Color(0xFF06B6D4);
 
   // ═══════════════════════════════════════════════════════════════
-  // SEMANTIC COLORS
+  // SEMANTIC COLORS - Everblush
   // ═══════════════════════════════════════════════════════════════
-  static const red = Color(0xFFEF4444);
+  static const red = Color(0xFFE57474);
   static const yellow = Color(0xFFE5C76B);
   static const yellowLight = Color(0xFFF59E0B);
   static const purple = Color(0xFFC47FD5);
@@ -60,10 +63,51 @@ class AppColors {
   static const lightDisabled = Color(0xFFD1D5DB);
 
   // ═══════════════════════════════════════════════════════════════
-  // UI Elements - Dark Mode (subtle dividers, flat controls)
+  // UI Elements - Dark Mode (Everblush-tinted dividers/borders)
   // ═══════════════════════════════════════════════════════════════
-  static const darkDivider = Color(0xFF333333);
-  static const darkBorder = Color(0xFF3A3A3A);
-  static const darkHoverBg = Color(0xFF2E2E2E);
-  static const darkDisabled = Color(0xFF4A4A4A);
+  static const darkDivider = Color(0xFF2F3A3E);
+  static const darkBorder = Color(0xFF3A464B);
+  static const darkHoverBg = Color(0xFF2E383C);
+  static const darkDisabled = Color(0xFF4A5559);
+}
+
+/// Accent colors selectable in Settings — all from Everblush palette.
+enum AppAccent { red, green, yellow, blue, purple, cyan }
+
+extension AppAccentX on AppAccent {
+  Color get color => switch (this) {
+        AppAccent.red => const Color(0xFFE57474),
+        AppAccent.green => const Color(0xFF8CCF7E),
+        AppAccent.yellow => const Color(0xFFE5C76B),
+        AppAccent.blue => const Color(0xFF67B0E8),
+        AppAccent.purple => const Color(0xFFC47FD5),
+        AppAccent.cyan => const Color(0xFF6CBFBF),
+      };
+
+  String get label => switch (this) {
+        AppAccent.red => 'Red',
+        AppAccent.green => 'Green',
+        AppAccent.yellow => 'Yellow',
+        AppAccent.blue => 'Blue',
+        AppAccent.purple => 'Purple',
+        AppAccent.cyan => 'Cyan',
+      };
+
+  static AppAccent fromString(String? value) {
+    switch (value) {
+      case 'red':
+        return AppAccent.red;
+      case 'green':
+        return AppAccent.green;
+      case 'yellow':
+        return AppAccent.yellow;
+      case 'purple':
+        return AppAccent.purple;
+      case 'cyan':
+        return AppAccent.cyan;
+      case 'blue':
+      default:
+        return AppAccent.blue;
+    }
+  }
 }

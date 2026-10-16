@@ -95,6 +95,7 @@ class _MainColumn extends GetView<AppController> {
                 description: statusText,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     SettingsButton(
                       label: scanning ? 'Scanning' : 'Scan',
@@ -102,10 +103,8 @@ class _MainColumn extends GetView<AppController> {
                       enabled: !scanning && powered,
                     ),
                     const SizedBox(width: 10),
-                    Switch(
+                    SettingsSwitch(
                       value: powered,
-                      materialTapTargetSize:
-                          MaterialTapTargetSize.shrinkWrap,
                       onChanged: (_) => home.toggleBluetooth(),
                     ),
                   ],
@@ -115,9 +114,8 @@ class _MainColumn extends GetView<AppController> {
                 title: 'Automatic discovery',
                 description:
                     'Turn this off to prevent the app from checking for nearby devices.',
-                trailing: Switch(
+                trailing: SettingsSwitch(
                   value: powered,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   onChanged: (_) => home.toggleBluetooth(),
                 ),
               ),
@@ -165,6 +163,13 @@ class _DeviceListCard extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      // Subscribe to density so changing it rebuilds the list immediately.
+      final density = Get.find<AppController>().layoutMode.value;
+      final listPadding = switch (density) {
+        DeviceLayoutMode.grid => kComfortListPadding,
+        DeviceLayoutMode.tile => kCozyListPadding,
+        DeviceLayoutMode.compact => kCompactListPadding,
+      };
       if (controller.loading.value) {
         return const SettingsCard(
           children: [
@@ -211,7 +216,7 @@ class _DeviceListCard extends GetView<HomeController> {
       return SettingsCard(
         children: [
           for (var i = 0; i < devices.length; i++) ...[
-            _DeviceRow(device: devices[i]),
+            _DeviceRow(device: devices[i], contentPadding: listPadding),
             if (i != devices.length - 1)
               Divider(
                 height: 1,
@@ -230,8 +235,9 @@ class _DeviceListCard extends GetView<HomeController> {
 }
 
 class _DeviceRow extends GetView<HomeController> {
-  const _DeviceRow({required this.device});
+  const _DeviceRow({required this.device, this.contentPadding});
   final DeviceModel device;
+  final EdgeInsetsGeometry? contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -253,6 +259,7 @@ class _DeviceRow extends GetView<HomeController> {
           selected: selected,
           title: device.nameOrUnknown,
           subtitle: subtitle,
+          contentPadding: contentPadding,
           leading: Icon(
             connected
                 ? Icons.bluetooth_connected_rounded
@@ -267,12 +274,19 @@ class _DeviceRow extends GetView<HomeController> {
           onTap: () => showDeviceDetail(context, device),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (isLoading)
                 const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  height: kSettingsControlHeight,
+                  width: 36,
+                  child: Center(
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
                 )
               else
                 SettingsButton(
@@ -311,8 +325,11 @@ class _DeviceActionMenu extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      tooltip: 'Device actions',
+    return SizedBox(
+      height: kSettingsControlHeight,
+      width: kSettingsControlHeight,
+      child: PopupMenuButton<String>(
+        tooltip: 'Device actions',
       icon: Icon(
         Icons.more_horiz_rounded,
         size: 19,
@@ -349,6 +366,7 @@ class _DeviceActionMenu extends GetView<HomeController> {
           ),
         ];
       },
+      ),
     );
   }
 

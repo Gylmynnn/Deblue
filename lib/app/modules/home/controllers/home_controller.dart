@@ -44,23 +44,16 @@ class HomeController extends GetxController {
   }
 
   List<DeviceModel> get filteredDevices {
-    // Uses the debounced query (already trimmed + lowercased in AppController)
-    // so typing doesn't recompute O(N) toLowerCase on every keystroke.
-    final query = _appController.debouncedSearchQuery.value;
     final filter = _appController.filterMode.value;
 
     return devices.where((device) {
-      final matchesSearch = query.isEmpty ||
-          device.name.toLowerCase().contains(query) ||
-          device.address.toLowerCase().contains(query);
-
       final matchesFilter = switch (filter) {
         DeviceFilterMode.all => true,
         DeviceFilterMode.connected => device.connected,
         DeviceFilterMode.paired => device.paired,
       };
 
-      return matchesSearch && matchesFilter;
+      return matchesFilter;
     }).toList();
   }
 

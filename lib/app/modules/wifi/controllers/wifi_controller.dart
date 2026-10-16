@@ -19,7 +19,6 @@ class WifiController extends GetxController {
   Timer? _refreshDebounce;
   bool _refreshing = false;
   bool _refreshQueued = false;
-  Worker? _searchDebounce;
 
   final RxBool loading = false.obs;
   final RxBool scanning = false.obs;
@@ -28,8 +27,6 @@ class WifiController extends GetxController {
   final RxList<WifiDeviceModel> devices = <WifiDeviceModel>[].obs;
   final RxString selectedDevice = ''.obs;
   final RxSet<String> busySsids = <String>{}.obs;
-  final RxString searchQuery = ''.obs;
-  final RxString debouncedSearchQuery = ''.obs;
 
   /// Hook set by the view to prompt for a password when the saved profile
   /// is locked to another adapter (avoids a view import cycle).
@@ -38,11 +35,6 @@ class WifiController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _searchDebounce = debounce(
-      searchQuery,
-      (value) => debouncedSearchQuery.value = value.trim().toLowerCase(),
-      time: const Duration(milliseconds: 300),
-    );
     _init();
   }
 
@@ -50,7 +42,6 @@ class WifiController extends GetxController {
   void onClose() {
     _eventSubscription?.cancel();
     _refreshDebounce?.cancel();
-    _searchDebounce?.dispose();
     // Don't leave the native Rust listener thread + D-Bus match rules alive.
     _eventService.disconnect();
     super.onClose();
@@ -63,12 +54,7 @@ class WifiController extends GetxController {
   }
 
   List<WifiNetworkModel> get filteredNetworks {
-    final query = debouncedSearchQuery.value;
-    if (query.isEmpty) return networks.toList();
-    return networks.where((net) {
-      return net.ssid.toLowerCase().contains(query) ||
-          net.bssid.toLowerCase().contains(query);
-    }).toList();
+    return networks.toList();
   }
 
   WifiNetworkModel? get activeNetwork {

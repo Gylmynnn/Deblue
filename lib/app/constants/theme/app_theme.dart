@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'app_color.dart';
 
 class AppTheme {
-  static ThemeData dark() {
+  static ThemeData dark({required Color accent}) {
     const surface = AppColors.darkSurface;
     return ThemeData(
       useMaterial3: true,
@@ -35,7 +35,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.blue, width: 1.5),
+          borderSide: BorderSide(color: accent, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
@@ -45,18 +45,18 @@ class AppTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) return Colors.white;
-          return const Color(0xFF6B6B6B);
+          return const Color(0xFF6B7C80);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.blue.withValues(alpha: 0.8);
+            return accent.withValues(alpha: 0.8);
           }
-          return const Color(0xFF3A3A3A);
+          return const Color(0xFF3A464B);
         }),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: const Color(0xFF333333),
+          backgroundColor: const Color(0xFF2E383C),
           foregroundColor: AppColors.textDark,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -87,7 +87,7 @@ class AppTheme {
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const Color(0xFF3A3A3A);
+              return const Color(0xFF2E383C);
             }
             return Colors.transparent;
           }),
@@ -110,8 +110,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.textDark,
+      colorScheme: ColorScheme.dark(
+        primary: accent,
         secondary: AppColors.textDarkSecondary,
         surface: surface,
         error: AppColors.red,
@@ -139,7 +139,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData light() {
+  static ThemeData light({required Color accent}) {
     const surface = AppColors.lightSurface;
     return ThemeData(
       useMaterial3: true,
@@ -171,12 +171,24 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.blueLight, width: 1.5),
+          borderSide: BorderSide(color: accent, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 10,
         ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return const Color(0xFF9AA7B2);
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return accent.withValues(alpha: 0.9);
+          }
+          return const Color(0xFFD1D5DB);
+        }),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -223,8 +235,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.textLight,
+      colorScheme: ColorScheme.light(
+        primary: accent,
         secondary: AppColors.textLightSecondary,
         surface: surface,
         error: AppColors.red,

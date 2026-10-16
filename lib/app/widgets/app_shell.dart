@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../controllers/app_controller.dart';
 
@@ -26,29 +27,34 @@ class AppShell extends GetView<AppController> {
 
         if (!isDesktop) {
           return Scaffold(
-            appBar: AppBar(
-              title: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight),
+              child: DragToMoveArea(
+                child: AppBar(
+                  title: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  actions: [
+                    ...actions,
+                    IconButton(
+                      icon: Obx(() {
+                        return Icon(
+                          controller.isDarkMode
+                              ? Icons.light_mode_outlined
+                              : Icons.dark_mode_outlined,
+                          size: 20,
+                        );
+                      }),
+                      onPressed: controller.toggleTheme,
+                      tooltip: 'Toggle theme',
+                    ),
+                  ],
                 ),
               ),
-              actions: [
-                ...actions,
-                IconButton(
-                  icon: Obx(() {
-                    return Icon(
-                      controller.isDarkMode
-                          ? Icons.light_mode_outlined
-                          : Icons.dark_mode_outlined,
-                      size: 20,
-                    );
-                  }),
-                  onPressed: controller.toggleTheme,
-                  tooltip: 'Toggle theme',
-                ),
-              ],
             ),
             drawer: const Drawer(child: SafeArea(child: _SidebarBody())),
             body: child,
@@ -61,10 +67,7 @@ class AppShell extends GetView<AppController> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(
-                  width: 250,
-                  child: _SidebarBody(),
-                ),
+                const SizedBox(width: 250, child: _SidebarBody()),
                 Container(
                   width: 1,
                   color: theme.dividerColor.withValues(alpha: 0.6),
@@ -94,21 +97,21 @@ class _SlimTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
-          ),
-          const Spacer(),
-          ...actions,
-        ],
+    return DragToMoveArea(
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+            const Spacer(),
+            ...actions,
+          ],
+        ),
       ),
     );
   }
@@ -124,84 +127,16 @@ class _SidebarBody extends GetView<AppController> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       children: [
-        // Search like "Search settings..." in the reference.
-        TextField(
-          onChanged: controller.setSearchQuery,
-          style: const TextStyle(fontSize: 14),
-          decoration: const InputDecoration(
-            hintText: 'Search settings...',
-            prefixIcon: Icon(Icons.search_rounded, size: 18),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 10,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
         _GroupLabel('Options'),
         const SizedBox(height: 4),
         const _SidebarNav(),
         const SizedBox(height: 16),
-        _GroupLabel('Appearance'),
-        const SizedBox(height: 4),
-        Obx(() {
-          final isDark = controller.isDarkMode;
-          return _NavItem(
-            icon: isDark
-                ? Icons.dark_mode_outlined
-                : Icons.light_mode_outlined,
-            label: isDark ? 'Dark mode' : 'Light mode',
-            selected: false,
-            trailingWidget: Switch(
-              value: isDark,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              onChanged: (_) => controller.toggleTheme(),
-            ),
-            onTap: controller.toggleTheme,
-          );
-        }),
-        const SizedBox(height: 2),
-        Obx(() {
-          final mode = controller.layoutMode.value;
-          return _NavItem(
-            icon: Icons.view_list_outlined,
-            label: 'List density',
-            selected: false,
-            trailingText: _layoutLabel(mode),
-            onTap: () => _cycleLayout(),
-          );
-        }),
-        const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text(
-            'DeSys • v1.0.0',
-            style: theme.textTheme.bodySmall,
-          ),
+          child: Text('DeSys • v1.0.0', style: theme.textTheme.bodySmall),
         ),
       ],
     );
-  }
-
-  String _layoutLabel(DeviceLayoutMode mode) {
-    switch (mode) {
-      case DeviceLayoutMode.grid:
-        return 'Comfort';
-      case DeviceLayoutMode.tile:
-        return 'Cozy';
-      case DeviceLayoutMode.compact:
-        return 'Compact';
-    }
-  }
-
-  void _cycleLayout() {
-    final current = controller.layoutMode.value;
-    final next = switch (current) {
-      DeviceLayoutMode.grid => DeviceLayoutMode.tile,
-      DeviceLayoutMode.tile => DeviceLayoutMode.compact,
-      DeviceLayoutMode.compact => DeviceLayoutMode.grid,
-    };
-    controller.setLayoutMode(next);
   }
 }
 
@@ -216,10 +151,8 @@ class _GroupLabel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 12.5,
-            ),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(fontWeight: FontWeight.w600, fontSize: 12.5),
       ),
     );
   }
@@ -246,12 +179,17 @@ class _SidebarNav extends GetView<AppController> {
             selected: module == SystemModule.wifi,
             onTap: () => _goTo(SystemModule.wifi),
           ),
-          const _NavItem(
+          _NavItem(
             icon: Icons.volume_up_outlined,
             label: 'Sound',
-            selected: false,
-            enabled: false,
-            trailingText: 'Soon',
+            selected: module == SystemModule.sound,
+            onTap: () => _goTo(SystemModule.sound),
+          ),
+          _NavItem(
+            icon: Icons.settings_outlined,
+            label: 'Settings',
+            selected: module == SystemModule.settings,
+            onTap: () => _goTo(SystemModule.settings),
           ),
         ],
       );
@@ -274,30 +212,22 @@ class _NavItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.selected,
-    this.enabled = true,
-    this.trailingText,
-    this.trailingWidget,
     this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool selected;
-  final bool enabled;
-  final String? trailingText;
-  final Widget? trailingWidget;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final selectedBg =
-        isDark ? const Color(0xFF333333) : const Color(0xFFE8EAED);
+    final accent = theme.colorScheme.primary;
+    final selectedBg = accent.withValues(alpha: 0.16);
 
-    final fg = enabled
-        ? theme.textTheme.bodyLarge?.color
-        : theme.textTheme.bodySmall?.color;
+    final fg = theme.textTheme.bodyLarge?.color;
+    final selectedFg = selected ? accent : fg;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1),
@@ -306,30 +236,23 @@ class _NavItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
-          onTap: enabled ? onTap : null,
+          onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: Row(
               children: [
-                Icon(icon, size: 18, color: fg),
+                Icon(icon, size: 18, color: selectedFg),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     label,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight:
-                          selected ? FontWeight.w600 : FontWeight.w400,
-                      color: fg,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                      color: selectedFg,
                     ),
                   ),
                 ),
-                if (trailingWidget != null) trailingWidget!
-                else if (trailingText != null)
-                  Text(
-                    trailingText!,
-                    style: theme.textTheme.bodySmall?.copyWith(fontSize: 11.5),
-                  ),
               ],
             ),
           ),

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../controllers/app_controller.dart';
 import '../../../data/models/wifi_network_model.dart';
 import '../../../widgets/settings_ui.dart';
 import '../controllers/wifi_controller.dart';
 
 class WifiContent extends GetView<WifiController> {
-  const WifiContent({super.key});
+  const new({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -30,28 +31,28 @@ class WifiContent extends GetView<WifiController> {
                 final desc = !enabled
                     ? 'Turn this off to prevent the app from checking for networks.'
                     : connected
-                        ? 'Connected to ${status!.activeSsid} (${status.activeSignal}%)'
-                        : 'Not connected. Turn this on to scan for networks.';
+                    ? 'Connected to ${status!.activeSsid} (${status.activeSignal}%)'
+                    : 'Not connected. Turn this on to scan for networks.';
 
                 return SettingsCard(
                   children: [
                     SettingsRow(
-                      title: 'WiFi',
+                      title: 'Wifi',
                       description: desc,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           SettingsButton(
                             label: scanning ? 'Scanning' : 'Scan',
                             enabled: !scanning && enabled,
-                            onPressed:
-                                scanning || !enabled ? null : controller.rescan,
+                            onPressed: scanning || !enabled
+                                ? null
+                                : controller.rescan,
                           ),
                           const SizedBox(width: 10),
-                          Switch(
+                          SettingsSwitch(
                             value: enabled,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
                             onChanged: (_) => controller.toggleWifi(),
                           ),
                         ],
@@ -104,8 +105,9 @@ class WifiContent extends GetView<WifiController> {
                 final total = controller.filteredNetworks.length;
                 final active = controller.activeNetwork;
                 final suffix = total > 0 ? ' • $total found' : '';
-                final conn =
-                    active != null ? ' • Connected: ${active.ssid}' : '';
+                final conn = active != null
+                    ? ' • Connected: ${active.ssid}'
+                    : '';
                 return SettingsSectionHeader('Networks$suffix$conn');
               }),
               _NetworkListCard(),
@@ -121,6 +123,13 @@ class _NetworkListCard extends GetView<WifiController> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
+      // Subscribe to density so changing it rebuilds the list immediately.
+      final density = Get.find<AppController>().layoutMode.value;
+      final listPadding = switch (density) {
+        DeviceLayoutMode.grid => kComfortListPadding,
+        DeviceLayoutMode.tile => kCozyListPadding,
+        DeviceLayoutMode.compact => kCompactListPadding,
+      };
       if (controller.loading.value) {
         return const SettingsCard(
           children: [
@@ -143,9 +152,8 @@ class _NetworkListCard extends GetView<WifiController> {
                 children: [
                   Text(
                     'No networks found',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                    style: Theme.of(context).textTheme.bodyLarge
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -167,16 +175,14 @@ class _NetworkListCard extends GetView<WifiController> {
       return SettingsCard(
         children: [
           for (var i = 0; i < networks.length; i++) ...[
-            _WifiRow(network: networks[i]),
+            _WifiRow(network: networks[i], contentPadding: listPadding),
             if (i != networks.length - 1)
               Divider(
                 height: 1,
                 thickness: 1,
                 indent: 16,
                 endIndent: 16,
-                color: Theme.of(context)
-                    .dividerColor
-                    .withValues(alpha: 0.5),
+                color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
               ),
           ],
         ],
@@ -193,8 +199,9 @@ IconData _signalIcon(int signal) {
 }
 
 class _WifiRow extends GetView<WifiController> {
-  const _WifiRow({required this.network});
+  const _WifiRow({required this.network, this.contentPadding});
   final WifiNetworkModel network;
+  final EdgeInsetsGeometry? contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -206,16 +213,14 @@ class _WifiRow extends GetView<WifiController> {
       selected: inUse,
       title: network.ssid.isEmpty ? '(Hidden network)' : network.ssid,
       subtitle: subtitle,
+      contentPadding: contentPadding,
       leading: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             _signalIcon(network.signal),
             size: 19,
-            color: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.color
+            color: Theme.of(context).textTheme.bodyMedium?.color
                 ?.withValues(alpha: 0.8),
           ),
           if (network.isSecured) ...[
@@ -232,13 +237,20 @@ class _WifiRow extends GetView<WifiController> {
         final busy = controller.isBusy(network.ssid);
         if (busy) {
           return const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            height: kSettingsControlHeight,
+            width: 36,
+            child: Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
           );
         }
         return Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SettingsButton(
               label: inUse ? 'Disconnect' : 'Connect',
@@ -252,8 +264,7 @@ class _WifiRow extends GetView<WifiController> {
                 }
               },
             ),
-            if (network.saved && !inUse)
-              _NetworkActionMenu(network: network),
+            if (network.saved && !inUse) _NetworkActionMenu(network: network),
           ],
         );
       }),
@@ -267,24 +278,23 @@ class _NetworkActionMenu extends GetView<WifiController> {
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<String>(
-      tooltip: 'Network actions',
-      icon: Icon(
-        Icons.more_horiz_rounded,
-        size: 19,
-        color: Theme.of(context).textTheme.bodySmall?.color,
+    return SizedBox(
+      height: kSettingsControlHeight,
+      width: kSettingsControlHeight,
+      child: PopupMenuButton<String>(
+        tooltip: 'Network actions',
+        icon: Icon(
+          Icons.more_horiz_rounded,
+          size: 19,
+          color: Theme.of(context).textTheme.bodySmall?.color,
+        ),
+        onSelected: (value) async {
+          if (value == 'forget') _showForgetDialog(context);
+        },
+        itemBuilder: (context) {
+          return const [PopupMenuItem(value: 'forget', child: Text('Forget'))];
+        },
       ),
-      onSelected: (value) async {
-        if (value == 'forget') _showForgetDialog(context);
-      },
-      itemBuilder: (context) {
-        return const [
-          PopupMenuItem(
-            value: 'forget',
-            child: Text('Forget'),
-          ),
-        ];
-      },
     );
   }
 
